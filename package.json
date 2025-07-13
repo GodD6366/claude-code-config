@@ -1,0 +1,27 @@
+{
+  "name": "claude-code-config",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "claude-env-switch.js",
+  "bin": {
+    "ccc": "./claude-env-switch.js",
+    "claude-code-config": "./claude-env-switch.js"
+  },
+  "scripts": {
+    "start": "node claude-env-switch.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "claude",
+    "anthropic",
+    "environment",
+    "config"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "Claude environment configuration switcher",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "inquirer": "^12.7.0"
+  }
+}

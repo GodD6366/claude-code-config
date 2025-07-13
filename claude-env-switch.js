@@ -423,6 +423,5 @@ async function main() {
     }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-    main().catch(console.error);
-}
+// 直接执行 main 函数，无论如何调用
+main().catch(console.error);

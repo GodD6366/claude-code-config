@@ -9,9 +9,9 @@
   },
   "scripts": {
     "start": "node claude-env-switch.js",
-    "release": "npm version patch && npm publish",
-    "release:minor": "npm version minor && npm publish",
-    "release:major": "npm version major && npm publish"
+    "release": "npm version patch",
+    "release:minor": "npm version minor",
+    "release:major": "npm version major"
   },
   "keywords": [
     "claude",

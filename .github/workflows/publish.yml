@@ -9,6 +9,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout code
@@ -33,10 +36,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
           body: |
-            Changes in this Release
+            ## Changes in this Release
+            
             - Bug fixes and improvements
+            - See [CHANGELOG](./CHANGELOG.md) for detailed changes
+            
+            ## Installation
+            
+            ```bash
+            npm install -g claude-code-config
+            ```
+            
+            ## Usage
+            
+            ```bash
+            ccc --help
+            ```
           draft: false
           prerelease: false

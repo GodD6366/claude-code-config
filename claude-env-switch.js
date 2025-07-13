@@ -181,14 +181,24 @@ async function deleteEnvironmentFromSettings(paths) {
     console.log(chalk.white(`  Base URL: ${settings.env.ANTHROPIC_BASE_URL || '未设置'}`));
     console.log(chalk.white(`  Auth Token: ${settings.env.ANTHROPIC_AUTH_TOKEN ? 'sk-****' + settings.env.ANTHROPIC_AUTH_TOKEN.slice(-8) : '未设置'}`));
 
-    const { confirm } = await inquirer.prompt([
-        {
-            type: 'confirm',
-            name: 'confirm',
-            message: '确定要清除 settings.json 中的代理配置吗?',
-            default: false
+    let confirm;
+    try {
+        const result = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: '确定要清除 settings.json 中的代理配置吗?',
+                default: false
+            }
+        ]);
+        confirm = result.confirm;
+    } catch (error) {
+        if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+            console.log(chalk.gray('\n👋 再见!'));
+            return;
         }
-    ]);
+        throw error;
+    }
 
     if (confirm) {
         // 删除环境配置但保留其他设置
@@ -252,14 +262,24 @@ async function setDefaultMode(paths) {
     const currentMode = settings.permissions?.defaultMode;
     console.log(chalk.blue(`\n当前 Default Mode: ${currentMode || chalk.gray('未设置')}`));
 
-    const { mode } = await inquirer.prompt([
-        {
-            type: 'list',
-            name: 'mode',
-            message: '选择 permissions.defaultMode:',
-            choices: modes
+    let mode;
+    try {
+        const result = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'mode',
+                message: '选择 permissions.defaultMode:',
+                choices: modes
+            }
+        ]);
+        mode = result.mode;
+    } catch (error) {
+        if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+            console.log(chalk.gray('\n👋 用户取消操作，再见!'));
+            return;
         }
-    ]);
+        throw error;
+    }
 
     if (mode === 'clear') {
         if (settings.permissions) {
@@ -285,7 +305,7 @@ async function setDefaultMode(paths) {
 
 async function openWithEditor(filePath) {
     const editors = ['cursor', 'code'];
-    
+
     for (const editor of editors) {
         try {
             // 检查编辑器是否可用
@@ -298,23 +318,23 @@ async function openWithEditor(filePath) {
                     }
                 });
             });
-            
+
             // 如果编辑器可用，使用它打开文件
             console.log(chalk.blue(`\n🚀 使用 ${editor} 打开配置文件...`));
-            spawn(editor, [filePath], { 
-                detached: true, 
-                stdio: 'ignore' 
+            spawn(editor, [filePath], {
+                detached: true,
+                stdio: 'ignore'
             }).unref();
-            
+
             console.log(chalk.green(`✓ 已在 ${editor} 中打开: ${filePath}`));
             return true;
-            
+
         } catch (error) {
             // 编辑器不可用，尝试下一个
             continue;
         }
     }
-    
+
     // 所有编辑器都不可用，回退到显示路径
     console.log(chalk.yellow('\n⚠️  未找到 cursor 或 code 编辑器'));
     console.log(chalk.blue(`📁 配置文件位置: ${filePath}`));
@@ -367,14 +387,24 @@ async function main() {
         { name: '❌ 退出', value: 'exit' }
     ];
 
-    const { action } = await inquirer.prompt([
-        {
-            type: 'list',
-            name: 'action',
-            message: '请选择操作:',
-            choices: actions
+    let action;
+    try {
+        const result = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'action',
+                message: '请选择操作:',
+                choices: actions
+            }
+        ]);
+        action = result.action;
+    } catch (error) {
+        if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+            console.log(chalk.gray('\n👋 用户取消操作，再见!'));
+            return;
         }
-    ]);
+        throw error;
+    }
 
     switch (action) {
         case 'switch':
@@ -384,14 +414,24 @@ async function main() {
                 value: index
             }));
 
-            const { envIndex } = await inquirer.prompt([
-                {
-                    type: 'list',
-                    name: 'envIndex',
-                    message: '选择要切换到的代理:',
-                    choices: envChoices
+            let envIndex;
+            try {
+                const result = await inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'envIndex',
+                        message: '选择要切换到的代理:',
+                        choices: envChoices
+                    }
+                ]);
+                envIndex = result.envIndex;
+            } catch (error) {
+                if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+                    console.log(chalk.gray('\n👋 用户取消操作，再见!'));
+                    return;
                 }
-            ]);
+                throw error;
+            }
 
             const selectedEnv = configs.environments[envIndex];
             if (switchEnvironment(selectedEnv, paths)) {

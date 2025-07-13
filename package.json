@@ -9,19 +9,48 @@
   },
   "scripts": {
     "start": "node claude-env-switch.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run test",
+    "release": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
   },
   "keywords": [
     "claude",
+    "claude-code",
     "anthropic",
     "environment",
-    "config"
+    "config",
+    "proxy",
+    "switcher",
+    "cli",
+    "tool"
   ],
   "author": "",
-  "license": "ISC",
-  "description": "Claude environment configuration switcher",
+  "license": "MIT",
+  "description": "Claude Code 环境配置管理工具，支持快速切换代理服务器和权限设置",
+  "homepage": "https://github.com/GodD6366/claude-code-config#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodD6366/claude-code-config.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GodD6366/claude-code-config/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "claude-env-switch.js",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "chalk": "^5.4.1",
     "inquirer": "^12.7.0"
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
   }
 }

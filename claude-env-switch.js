@@ -39,22 +39,23 @@ function parseArgs() {
 
 // 获取配置路径
 function getConfigPaths(isProject, projectPath) {
+    // ccc 的配置（代理列表）始终位于全局
+    const configDir = path.join(os.homedir(), '.claude-code-config');
+    const configPath = path.join(configDir, 'configs.json');
+
     if (isProject) {
+        // claude 的配置（settings.json）可以在项目中
         const settingsPath = path.join(projectPath, '.claude', 'settings.json');
-        const configDir = path.join(projectPath, '.claude-code-config');
-        const configPath = path.join(configDir, 'configs.json');
 
         return {
             settingsPath,
-            configDir,
-            configPath,
+            configDir,      // 始终使用全局路径
+            configPath,     // 始终使用全局路径
             type: 'project',
             location: projectPath
         };
     } else {
         const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
-        const configDir = path.join(os.homedir(), '.claude-code-config');
-        const configPath = path.join(configDir, 'configs.json');
 
         return {
             settingsPath,

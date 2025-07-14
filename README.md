@@ -4,11 +4,12 @@
 
 ## 功能特性
 
-- 🔄 **快速切换代理** - 在多个 Claude API 代理之间快速切换
-- 🔐 **权限模式管理** - 独立管理 `permissions.defaultMode` 设置
-- 📁 **项目/全局配置** - 支持项目级别和全局级别的配置管理
-- 🖥️ **编辑器集成** - 自动调用 Cursor 或 VS Code 编辑配置文件
-- 📋 **配置查看** - 直观显示当前配置状态
+- 🔄 **快速切换代理** - 在多个预设代理中为指定环境（项目/全局）快速切换。
+- 🔐 **权限模式管理** - 独立管理不同环境的 `permissions.defaultMode` 设置。
+- 📁 **项目/全局配置** - 支持项目级别和全局级别的 `settings.json` 配置管理。
+- 🗄️ **集中管理** - 所有代理配置信息集中存储在一个全局文件中，方便维护。
+- 🖥️ **编辑器集成** - 自动调用 Cursor 或 VS Code 编辑配置文件。
+- 📋 **配置查看** - 直观显示当前环境的配置状态。
 
 ## 为什么使用 CCC 而不是环境变量？
 
@@ -35,14 +36,14 @@ npm install -g claude-code-config
 ### 基本命令
 
 ```bash
-# 管理全局配置
+# 管理全局配置 (目标: ~/.claude/settings.json)
 ccc
 
-# 管理当前目录的项目配置
+# 管理当前目录的项目配置 (目标: ./ .claude/settings.json)
 ccc --project
 ccc -p
 
-# 管理指定目录的项目配置
+# 管理指定目录的项目配置 (目标: /path/to/project/.claude/settings.json)
 ccc --project /path/to/project
 ccc /path/to/project
 
@@ -51,56 +52,59 @@ ccc --help
 ccc -h
 ```
 
-### 配置格式
+## 配置文件
 
-在 `~/.claude-code-config/configs.json` (全局) 或项目目录下的 `.claude-code-config/configs.json` (项目) 中配置代理：
+### 1. 代理列表 (全局唯一)
 
-```json
-{
-  "environments": [
-    {
-      "name": "anthropic-official",
-      "ANTHROPIC_AUTH_TOKEN": "sk-your-token-here",
-      "ANTHROPIC_BASE_URL": "https://api.anthropic.com"
-    },
-    {
-      "name": "proxy-server",
-      "ANTHROPIC_AUTH_TOKEN": "sk-proxy-token-here",
-      "ANTHROPIC_BASE_URL": "https://your-proxy.com"
-    }
-  ]
-}
-```
+这是您所有代理配置的中央存储库。
 
-### 权限模式
+- **位置**: `~/.claude-code-config/configs.json`
+- **用途**: 定义所有可供选择的代理环境。
+- **格式**:
+  ```json
+  {
+    "environments": [
+      {
+        "name": "anyrouter",
+        "ANTHROPIC_AUTH_TOKEN": "sk-your-token-here",
+        "ANTHROPIC_BASE_URL": "https://anyrouter.top"
+      },
+      {
+        "name": "kimi-k2",
+        "ANTHROPIC_AUTH_TOKEN": "sk-proxy-token-here",
+        "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic"
+      }
+    ]
+  }
+  ```
+  > **提示**: 如果您需要一个免费的代理服务，可以考虑使用 [AnyRouter](https://anyrouter.top/register?aff=KGbT)。
 
-支持以下 `permissions.defaultMode` 设置：
+### 2. Claude 设置文件 (应用目标)
 
-- **default** - 标准行为，首次使用每个工具时提示权限
-- **acceptEdits** - 自动接受文件编辑权限
-- **plan** - 计划模式，只能分析不能修改
-- **bypassPermissions** - 跳过所有权限提示
+这是 CCC 工具实际读取和修改的文件，Claude Code 也依赖此文件来获取配置。
+
+- **全局设置**: `~/.claude/settings.json`
+- **项目设置**: `{project}/.claude/settings.json`
 
 ## 功能菜单
 
 启动 `ccc` 后，您可以选择以下操作：
 
-- 🔄 **切换代理** - 在配置的代理服务器之间切换
-- 🔐 **设置权限模式** - 独立管理权限模式设置
-- 📋 **查看当前配置** - 显示当前的代理和权限配置
-- 🗑️ **清除代理配置** - 从 settings.json 中清除代理设置
-- 📝 **编辑配置文件** - 使用 Cursor 或 VS Code 编辑配置
-- ❌ **退出** - 退出程序
+- 🔄 **切换代理** - 从全局代理列表中选择一个，应用到当前目标的 `settings.json`。
+- 📝 **编辑代理配置** - 使用编辑器打开并修改全局代理列表 `configs.json`。
+- 🔐 **设置权限模式** - 修改当前目标 `settings.json` 中的 `permissions.defaultMode`。
+- 📋 **查看当前Claude配置** - 显示当前目标 `settings.json` 的内容，并可选择直接编辑此文件。
+- 🗑️  **清除代理配置** - 从当前目标 `settings.json` 中移除代理相关的 `env` 设置。
+- ❌ **退出** - 退出程序。
 
-## 配置文件位置
+### 权限模式
 
-### 全局配置
-- 配置文件：`~/.claude-code-config/configs.json`
-- Claude 设置：`~/.claude/settings.json`
+支持在 `settings.json` 中设置以下 `permissions.defaultMode`：
 
-### 项目配置
-- 配置文件：`{project}/.claude-code-config/configs.json`
-- Claude 设置：`{project}/.claude/settings.json`
+- **default** - 标准行为，首次使用每个工具时提示权限。
+- **acceptEdits** - 自动接受文件编辑权限。
+- **plan** - 计划模式，只能分析不能修改。
+- **bypassPermissions** - 跳过所有权限提示。
 
 ## 开发
 

@@ -116,30 +116,27 @@ function loadSettings(paths) {
         const data = fs.readFileSync(paths.settingsPath, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.error(chalk.red(`错误: Claude设置文件 ${paths.settingsPath} 不存在`));
+        console.log(chalk.yellow(`提示: Claude设置文件 ${paths.settingsPath} 不存在或无效，将创建新的配置文件。`));
 
-        if (paths.type === 'project') {
-            console.log(chalk.yellow('提示: 项目配置文件不存在，将创建新的配置文件'));
-
-            // 确保目录存在
-            const dir = path.dirname(paths.settingsPath);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-
-            // 创建默认配置
-            const defaultSettings = {
-                "name": "project-settings",
-                "description": "Project-specific Claude Code settings"
-            };
-
-            fs.writeFileSync(paths.settingsPath, JSON.stringify(defaultSettings, null, 2), 'utf8');
-            console.log(chalk.green(`✓ 已创建项目配置文件: ${paths.settingsPath}`));
-
-            return defaultSettings;
+        // 确保目录存在
+        const dir = path.dirname(paths.settingsPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
         }
 
-        process.exit(1);
+        // 创建默认配置
+        const defaultSettings = {
+            "permissions": {
+                "allow": [],
+                "deny": []
+            },
+            "env": {}
+        };
+
+        fs.writeFileSync(paths.settingsPath, JSON.stringify(defaultSettings, null, 2), 'utf8');
+        console.log(chalk.green(`✓ 已创建默认配置文件: ${paths.settingsPath}`));
+
+        return defaultSettings;
     }
 }
 

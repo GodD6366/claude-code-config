@@ -1,55 +1,29 @@
-name: Publish to NPM
+# .github/workflows/publish.yml
+
+name: Publish to npm
 
 on:
   push:
     tags:
-      - 'v*.*.*'
-  workflow_dispatch:
+      - 'v*' # 仅在推送 v 开头的标签时触发 (例如 v1.0.0, v1.2.3)
 
 jobs:
-  publish:
+  publish-to-npm:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '18' # 您的 package.json 要求 >=16.0.0
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci # 使用 ci 更快、更可靠
 
-      - name: Publish to NPM
+      - name: Publish to npm
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create GitHub Release
-        run: |
-          gh release create ${{ github.ref_name }} \
-            --title "Release ${{ github.ref_name }}" \
-            --notes "## Changes in this Release
-
-          - Bug fixes and improvements
-          - See [CHANGELOG](./CHANGELOG.md) for detailed changes
-
-          ## Installation
-
-          \`\`\`bash
-          npm install -g claude-code-config
-          \`\`\`
-
-          ## Usage
-
-          \`\`\`bash
-          ccc --help
-          \`\`\`"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

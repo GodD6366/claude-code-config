@@ -6,6 +6,10 @@ import os from 'os';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { spawn, exec } from 'child_process';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
 
 // 解析命令行参数
 function parseArgs() {
@@ -218,7 +222,7 @@ async function deleteEnvironmentFromSettings(paths) {
     }
 }
 
-function showCurrentSettings(paths) {
+async function showCurrentSettings(paths) {
     const settings = loadSettings(paths);
 
     console.log(chalk.bold.blue(`\n📋 当前${paths.type === 'project' ? '项目' : '全局'}配置:`));
@@ -245,6 +249,30 @@ function showCurrentSettings(paths) {
         console.log(chalk.white(`  Default Mode: ${settings.permissions.defaultMode}`));
     } else {
         console.log(chalk.gray('  Default Mode: 未设置'));
+    }
+
+    console.log('');
+    let confirm;
+    try {
+        const result = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: `是否要编辑当前配置文件 (${path.basename(paths.settingsPath)})?`,
+                default: false
+            }
+        ]);
+        confirm = result.confirm;
+    } catch (error) {
+        if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+            console.log(chalk.gray('\n👋 用户取消操作。'));
+            return;
+        }
+        throw error;
+    }
+
+    if (confirm) {
+        await openWithEditor(paths.settingsPath);
     }
 }
 
@@ -343,13 +371,14 @@ async function openWithEditor(filePath) {
 }
 
 function showUsage() {
-    console.log(chalk.bold.cyan('🚀 Claude 环境配置管理工具\n'));
+    console.log(chalk.bold.cyan(`🚀 Claude 环境配置管理工具 v${pkg.version}\n`));
     console.log(chalk.white('用法:'));
     console.log(chalk.gray('  ccc                    # 管理全局配置'));
     console.log(chalk.gray('  ccc --project          # 管理当前目录的项目配置'));
     console.log(chalk.gray('  ccc --project /path    # 管理指定目录的项目配置'));
     console.log(chalk.gray('  ccc -p                 # --project 的简写'));
     console.log(chalk.gray('  ccc /path/to/project   # 直接指定项目路径'));
+    console.log(chalk.gray('  ccc -v, --version      # 显示版本号'));
     console.log('');
 }
 
@@ -362,10 +391,25 @@ async function main() {
         return;
     }
 
+    // 检查版本参数
+    if (process.argv.includes('-v') || process.argv.includes('--version')) {
+        console.log(`claude-code-config: ${pkg.version}`);
+        exec('claude -v', (error, stdout, stderr) => {
+            if (error) {
+                console.log(chalk.red(`claude: Not Found`));
+            } else {
+                console.log(`claude: ${stdout.trim()}`);
+            }
+        });
+        return;
+    }
+
     const paths = getConfigPaths(options.isProject, options.projectPath);
 
     console.clear();
-    console.log(chalk.bold.cyan('🚀 Claude 环境配置管理工具\n'));
+
+    console.log(chalk.bold.cyan(`🚀 Claude 环境配置管理工具 v${pkg.version}
+`));
 
     if (paths.type === 'project') {
         console.log(chalk.blue(`📁 项目模式: ${paths.location}`));
@@ -446,7 +490,7 @@ async function main() {
             break;
 
         case 'view':
-            showCurrentSettings(paths);
+            await showCurrentSettings(paths);
             break;
 
         case 'delete':

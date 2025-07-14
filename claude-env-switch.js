@@ -422,10 +422,10 @@ async function main() {
 
     const actions = [
         { name: '🔄 切换代理', value: 'switch' },
+        { name: '📝 编辑代理配置', value: 'edit' },
         { name: '🔐 设置权限模式', value: 'permissions' },
-        { name: '📋 查看当前配置', value: 'view' },
+        { name: '📋 查看当前Claude配置', value: 'view' },
         { name: '🗑️  清除代理配置', value: 'delete' },
-        { name: '📝 编辑配置文件', value: 'edit' },
         { name: '❌ 退出', value: 'exit' }
     ];
 

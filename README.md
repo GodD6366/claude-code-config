@@ -10,6 +10,7 @@
 - 🗄️ **集中管理** - 所有代理配置信息集中存储在一个全局文件中，方便维护。
 - 🖥️ **编辑器集成** - 自动调用 Cursor 或 VS Code 编辑配置文件。
 - 📋 **配置查看** - 直观显示当前环境的配置状态。
+- 🔑 **多种认证方式** - 同时支持 `ANTHROPIC_API_KEY` 和 `ANTHROPIC_AUTH_TOKEN` 两种认证方式。
 
 ## 为什么使用 CCC 而不是环境变量？
 
@@ -65,13 +66,18 @@ ccc -h
   {
     "environments": [
       {
+        "name": "anthropic-official",
+        "ANTHROPIC_API_KEY": "sk-your-api-key-here",
+        "ANTHROPIC_BASE_URL": "https://api.anthropic.com"
+      },
+      {
         "name": "anyrouter",
         "ANTHROPIC_AUTH_TOKEN": "sk-your-token-here",
         "ANTHROPIC_BASE_URL": "https://anyrouter.top"
       },
       {
         "name": "kimi-k2",
-        "ANTHROPIC_AUTH_TOKEN": "sk-proxy-token-here",
+        "ANTHROPIC_AUTH_TOKEN": "sk-your-api-key-here",
         "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic"
       }
     ]
@@ -93,8 +99,8 @@ ccc -h
 - 🔄 **切换代理** - 从全局代理列表中选择一个，应用到当前目标的 `settings.json`。
 - 📝 **编辑代理配置** - 使用编辑器打开并修改全局代理列表 `configs.json`。
 - 🔐 **设置权限模式** - 修改当前目标 `settings.json` 中的 `permissions.defaultMode`。
-- 📋 **查看当前Claude配置** - 显示当前目标 `settings.json` 的内容，并可选择直接编辑此文件。
-- 🗑️  **清除代理配置** - 从当前目标 `settings.json` 中移除代理相关的 `env` 设置。
+- 📋 **查看当前 Claude 配置** - 显示当前目标 `settings.json` 的内容，并可选择直接编辑此文件。
+- 🗑️ **清除代理配置** - 从当前目标 `settings.json` 中移除代理相关的 `env` 设置。
 - ❌ **退出** - 退出程序。
 
 ### 权限模式

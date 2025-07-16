@@ -159,10 +159,10 @@ function saveSettings(settings, paths) {
 
 function getCurrentEnvironmentIndex(configs, settings) {
     const currentUrl = settings.env?.ANTHROPIC_BASE_URL;
-    const currentToken = settings.env?.ANTHROPIC_AUTH_TOKEN || settings.env?.ANTHROPIC_API_KEY;
+    const currentToken = settings.env?.ANTHROPIC_API_KEY || settings.env?.ANTHROPIC_AUTH_TOKEN;
     
     return configs.environments.findIndex(env => {
-        const envToken = env.ANTHROPIC_AUTH_TOKEN || env.ANTHROPIC_API_KEY;
+        const envToken = env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN;
         return env.ANTHROPIC_BASE_URL === currentUrl && envToken === currentToken;
     });
 }
@@ -191,7 +191,7 @@ function switchEnvironment(env, paths) {
 async function deleteEnvironmentFromSettings(paths) {
     const settings = loadSettings(paths);
 
-    const hasToken = settings.env?.ANTHROPIC_AUTH_TOKEN || settings.env?.ANTHROPIC_API_KEY;
+    const hasToken = settings.env?.ANTHROPIC_API_KEY || settings.env?.ANTHROPIC_AUTH_TOKEN;
     if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !hasToken)) {
         console.log(chalk.yellow('⚠️  settings.json 中没有代理配置'));
         return;
@@ -248,7 +248,7 @@ async function showCurrentSettings(paths) {
     console.log(chalk.bold.blue(`\n📋 当前${paths.type === 'project' ? '项目' : '全局'}配置:`));
     console.log(chalk.gray(`   配置文件: ${paths.settingsPath}`));
 
-    const hasToken = settings.env?.ANTHROPIC_AUTH_TOKEN || settings.env?.ANTHROPIC_API_KEY;
+    const hasToken = settings.env?.ANTHROPIC_API_KEY || settings.env?.ANTHROPIC_AUTH_TOKEN;
     if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !hasToken)) {
         console.log(chalk.gray('  暂无代理配置'));
     } else {

@@ -79,6 +79,7 @@ function initializeConfig(paths) {
                 {
                     "name": "anthropic-official",
                     "ANTHROPIC_AUTH_TOKEN": "sk-your-token-here",
+                    "ANTHROPIC_API_KEY": "sk-your-api-key-here",
                     "ANTHROPIC_BASE_URL": "https://api.anthropic.com"
                 }
             ]
@@ -158,14 +159,30 @@ function saveSettings(settings, paths) {
 
 function getCurrentEnvironmentIndex(configs, settings) {
     const currentUrl = settings.env?.ANTHROPIC_BASE_URL;
-    return configs.environments.findIndex(env => env.ANTHROPIC_BASE_URL === currentUrl);
+    const currentToken = settings.env?.ANTHROPIC_AUTH_TOKEN || settings.env?.ANTHROPIC_API_KEY;
+    
+    return configs.environments.findIndex(env => {
+        const envToken = env.ANTHROPIC_AUTH_TOKEN || env.ANTHROPIC_API_KEY;
+        return env.ANTHROPIC_BASE_URL === currentUrl && envToken === currentToken;
+    });
 }
 
 function switchEnvironment(env, paths) {
     const settings = loadSettings(paths);
 
     settings.env = settings.env || {};
-    settings.env.ANTHROPIC_AUTH_TOKEN = env.ANTHROPIC_AUTH_TOKEN;
+    
+    // 清除旧的 token 设置
+    delete settings.env.ANTHROPIC_AUTH_TOKEN;
+    delete settings.env.ANTHROPIC_API_KEY;
+    
+    // 设置新的 token（优先使用 ANTHROPIC_API_KEY，如果没有则使用 ANTHROPIC_AUTH_TOKEN）
+    if (env.ANTHROPIC_API_KEY) {
+        settings.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
+    } else if (env.ANTHROPIC_AUTH_TOKEN) {
+        settings.env.ANTHROPIC_AUTH_TOKEN = env.ANTHROPIC_AUTH_TOKEN;
+    }
+    
     settings.env.ANTHROPIC_BASE_URL = env.ANTHROPIC_BASE_URL;
 
     return saveSettings(settings, paths);
@@ -174,14 +191,18 @@ function switchEnvironment(env, paths) {
 async function deleteEnvironmentFromSettings(paths) {
     const settings = loadSettings(paths);
 
-    if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !settings.env.ANTHROPIC_AUTH_TOKEN)) {
+    const hasToken = settings.env?.ANTHROPIC_AUTH_TOKEN || settings.env?.ANTHROPIC_API_KEY;
+    if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !hasToken)) {
         console.log(chalk.yellow('⚠️  settings.json 中没有代理配置'));
         return;
     }
 
     console.log(chalk.blue('\n当前 settings.json 中的代理配置:'));
     console.log(chalk.white(`  Base URL: ${settings.env.ANTHROPIC_BASE_URL || '未设置'}`));
-    console.log(chalk.white(`  Auth Token: ${settings.env.ANTHROPIC_AUTH_TOKEN ? 'sk-****' + settings.env.ANTHROPIC_AUTH_TOKEN.slice(-8) : '未设置'}`));
+    
+    const currentToken = settings.env.ANTHROPIC_API_KEY || settings.env.ANTHROPIC_AUTH_TOKEN;
+    const tokenType = settings.env.ANTHROPIC_API_KEY ? 'API Key' : 'Auth Token';
+    console.log(chalk.white(`  ${tokenType}: ${currentToken ? 'sk-****' + currentToken.slice(-8) : '未设置'}`));
 
     let confirm;
     try {
@@ -207,6 +228,7 @@ async function deleteEnvironmentFromSettings(paths) {
         if (settings.env) {
             delete settings.env.ANTHROPIC_BASE_URL;
             delete settings.env.ANTHROPIC_AUTH_TOKEN;
+            delete settings.env.ANTHROPIC_API_KEY;
 
             // 如果 env 对象为空，删除整个 env 字段
             if (Object.keys(settings.env).length === 0) {
@@ -226,11 +248,15 @@ async function showCurrentSettings(paths) {
     console.log(chalk.bold.blue(`\n📋 当前${paths.type === 'project' ? '项目' : '全局'}配置:`));
     console.log(chalk.gray(`   配置文件: ${paths.settingsPath}`));
 
-    if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !settings.env.ANTHROPIC_AUTH_TOKEN)) {
+    const hasToken = settings.env?.ANTHROPIC_AUTH_TOKEN || settings.env?.ANTHROPIC_API_KEY;
+    if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !hasToken)) {
         console.log(chalk.gray('  暂无代理配置'));
     } else {
         console.log(chalk.white(`  Base URL: ${settings.env.ANTHROPIC_BASE_URL || chalk.gray('未设置')}`));
-        console.log(chalk.white(`  Auth Token: ${settings.env.ANTHROPIC_AUTH_TOKEN ? 'sk-****' + settings.env.ANTHROPIC_AUTH_TOKEN.slice(-8) : chalk.gray('未设置')}`));
+        
+        const currentToken = settings.env.ANTHROPIC_API_KEY || settings.env.ANTHROPIC_AUTH_TOKEN;
+        const tokenType = settings.env.ANTHROPIC_API_KEY ? 'API Key' : 'Auth Token';
+        console.log(chalk.white(`  ${tokenType}: ${currentToken ? 'sk-****' + currentToken.slice(-8) : chalk.gray('未设置')}`));
 
         // 显示匹配的环境名称
         const configs = loadConfigs(paths);

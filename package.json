@@ -2,13 +2,13 @@
   "name": "claude-code-config",
   "version": "1.2.0",
   "type": "module",
-  "main": "claude-env-switch.js",
+  "main": "index.js",
   "bin": {
-    "ccc": "./claude-env-switch.js",
-    "claude-code-config": "./claude-env-switch.js"
+    "ccc": "./index.js",
+    "claude-code-config": "./index.js"
   },
   "scripts": {
-    "start": "node claude-env-switch.js",
+    "start": "node index.js",
     "release": "npm version patch",
     "release:minor": "npm version minor",
     "release:major": "npm version major"
@@ -39,7 +39,7 @@
     "node": ">=16.0.0"
   },
   "files": [
-    "claude-env-switch.js",
+    "index.js",
     "README.md",
     "LICENSE"
   ],

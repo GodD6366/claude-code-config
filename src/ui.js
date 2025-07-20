@@ -9,7 +9,7 @@ import {
   clearClaudeEnv,
 } from './claude.js';
 import { switchGeminiKey, configureGeminiSettings } from './gemini.js';
-import { openWithEditor } from './utils.js';
+import { openWithEditor, checkForUpdates, showUpdatePrompt } from './utils.js';
 import { getConfigPath, saveConfigs, loadConfigs } from './config.js';
 import { applyMcpConfig, showMcpStatus } from './mcp.js';
 
@@ -155,6 +155,37 @@ async function handleMcpConfig() {
   // If selection is null, user chose to go back, so do nothing
 }
 
+async function handleCheckUpdate() {
+  console.log(chalk.bold.cyan('\n🔍 检查更新\n'));
+  console.log(chalk.gray('正在检查最新版本...'));
+
+  try {
+    const updateInfo = await checkForUpdates(pkg.name, pkg.version);
+
+    if (updateInfo.hasUpdate && updateInfo.latestVersion) {
+      showUpdatePrompt(pkg.name, updateInfo.currentVersion, updateInfo.latestVersion);
+    } else if (updateInfo.latestVersion) {
+      console.log(chalk.green('✓ 您使用的是最新版本!'));
+      console.log(chalk.gray(`   当前版本: ${updateInfo.currentVersion}`));
+      console.log(chalk.gray(`   最新版本: ${updateInfo.latestVersion}`));
+    } else {
+      console.log(chalk.yellow('⚠️  无法获取最新版本信息'));
+    }
+  } catch (error) {
+    console.log(chalk.red('✗ 检查更新失败:'), error.message);
+  }
+
+  console.log(chalk.gray('\n按回车键继续...'));
+  await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'continue',
+      message: '',
+      prefix: '',
+    },
+  ]);
+}
+
 function showHeader(paths) {
   console.clear();
   console.log(chalk.bold.cyan(`🚀 环境配置管理工具 v${pkg.version}\n`));
@@ -184,6 +215,8 @@ export async function showMainMenu(paths) {
       { name: '🔧 配置 MCP 服务器', value: 'config_mcp' },
       new inquirer.Separator('\n--- Global ---'),
       { name: '📝 编辑全局配置文件', value: 'edit_config' },
+      new inquirer.Separator('\n--- 工具 ---'),
+      { name: '🔍 检查更新', value: 'check_update' },
       new inquirer.Separator(),
       { name: '❌ 退出', value: 'exit' },
     ];
@@ -234,6 +267,9 @@ export async function showMainMenu(paths) {
           break;
         case 'delete_claude':
           await clearClaudeEnv(paths);
+          break;
+        case 'check_update':
+          await handleCheckUpdate();
           break;
         case 'exit':
           console.log(chalk.gray('👋 再见!'));

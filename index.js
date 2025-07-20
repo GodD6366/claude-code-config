@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
-import { parseArgs, getClaudeConfigPaths } from './src/utils.js';
+import { parseArgs, getClaudeConfigPaths, checkForUpdates, showUpdatePrompt } from './src/utils.js';
 import { showMainMenu, showUsage, showVersion } from './src/ui.js';
 import { loadConfigs } from './src/config.js';
 import { applyMcpConfig } from './src/mcp.js';
 import chalk from 'chalk';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
 
 async function handleMcpCommand() {
     const { selectMcpServer } = await import('./src/ui.js');
@@ -35,6 +39,17 @@ async function main() {
     if (args.includes('mcp')) {
         await handleMcpCommand();
         return;
+    }
+
+    // 检查更新（仅在非帮助和版本命令时）
+    try {
+        const updateInfo = await checkForUpdates(pkg.name, pkg.version);
+        if (updateInfo.hasUpdate && updateInfo.latestVersion) {
+            showUpdatePrompt(pkg.name, updateInfo.currentVersion, updateInfo.latestVersion);
+        }
+    } catch (error) {
+        // 静默处理更新检查错误，不影响主程序运行
+        console.error(chalk.gray('检查更新失败，继续运行...'));
     }
 
     const options = parseArgs();

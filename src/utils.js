@@ -176,6 +176,84 @@ export async function checkForUpdates(packageName, currentVersion) {
 }
 
 /**
+ * 异步检查更新并缓存到配置文件
+ * @param {string} packageName - 包名
+ * @param {string} currentVersion - 当前版本
+ */
+export function checkUpdateAsync(packageName, currentVersion) {
+  // 异步执行，不阻塞主程序
+  setImmediate(async () => {
+    try {
+      const latestVersion = await getLatestVersion(packageName);
+      if (latestVersion) {
+        const { loadConfigs, saveConfigs } = await import('./config.js');
+        const configs = loadConfigs();
+
+        // 更新版本缓存信息
+        configs.versionCache = {
+          packageName,
+          currentVersion,
+          latestVersion,
+          lastChecked: new Date().toISOString(),
+          hasUpdate: compareVersions(currentVersion, latestVersion) === 1
+        };
+
+        saveConfigs(configs);
+      }
+    } catch (error) {
+      // 静默处理错误
+      console.error(chalk.gray('后台版本检查失败'));
+    }
+  });
+}
+
+/**
+ * 从缓存中检查是否有更新
+ * @param {string} packageName - 包名
+ * @param {string} currentVersion - 当前版本
+ * @returns {object|null} 缓存的版本信息或null
+ */
+export async function checkCachedUpdate(packageName, currentVersion) {
+  try {
+    const { loadConfigs } = await import('./config.js');
+    const configs = loadConfigs();
+
+    if (configs.versionCache &&
+        configs.versionCache.packageName === packageName &&
+        configs.versionCache.hasUpdate &&
+        configs.versionCache.currentVersion === currentVersion) {
+
+      // 检查缓存是否过期（24小时）
+      const lastChecked = new Date(configs.versionCache.lastChecked);
+      const now = new Date();
+      const hoursDiff = (now - lastChecked) / (1000 * 60 * 60);
+
+      if (hoursDiff < 24) {
+        return configs.versionCache;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * 清除版本缓存（用户更新后调用）
+ */
+export async function clearVersionCache() {
+  try {
+    const { loadConfigs, saveConfigs } = await import('./config.js');
+    const configs = loadConfigs();
+    delete configs.versionCache;
+    saveConfigs(configs);
+  } catch (error) {
+    // 静默处理错误
+  }
+}
+
+/**
  * 显示更新提示
  * @param {string} packageName - 包名
  * @param {string} currentVersion - 当前版本
@@ -186,6 +264,7 @@ export function showUpdatePrompt(packageName, currentVersion, latestVersion) {
   console.log(chalk.gray(`   当前版本: ${currentVersion}`));
   console.log(chalk.green(`   最新版本: ${latestVersion}`));
   console.log(chalk.cyan(`   更新命令: npm install -g ${packageName}@latest`));
-  console.log(chalk.gray('   或者运行: npm update -g ${packageName}'));
+  console.log(chalk.gray(`   或者运行: npm update -g ${packageName}`));
+  console.log(chalk.gray(`   更新后版本缓存将自动清除`));
   console.log('');
 }

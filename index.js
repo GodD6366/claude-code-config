@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { parseArgs, getClaudeConfigPaths, checkForUpdates, showUpdatePrompt } from './src/utils.js';
+import { parseArgs, getClaudeConfigPaths, checkUpdateAsync, checkCachedUpdate, showUpdatePrompt } from './src/utils.js';
 import { showMainMenu, showUsage, showVersion } from './src/ui.js';
 import { loadConfigs } from './src/config.js';
 import { applyMcpConfig } from './src/mcp.js';
@@ -41,12 +41,35 @@ async function main() {
         return;
     }
 
-    // 检查更新（仅在非帮助和版本命令时）
+            // 检查缓存的更新信息（不阻塞）
+    let hasUpdate = false;
     try {
-        const updateInfo = await checkForUpdates(pkg.name, pkg.version);
-        if (updateInfo.hasUpdate && updateInfo.latestVersion) {
-            showUpdatePrompt(pkg.name, updateInfo.currentVersion, updateInfo.latestVersion);
+        // 先检查缓存中是否有更新信息
+        const cachedUpdate = await checkCachedUpdate(pkg.name, pkg.version);
+        if (cachedUpdate && cachedUpdate.hasUpdate) {
+            hasUpdate = true;
+            showUpdatePrompt(pkg.name, cachedUpdate.currentVersion, cachedUpdate.latestVersion);
+
+            // 等待用户确认看到更新提示
+            try {
+                const inquirer = (await import('inquirer')).default;
+                await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'continue',
+                        message: '按回车键继续...',
+                        prefix: '',
+                    },
+                ]);
+            } catch (promptError) {
+                // 如果用户取消或者输入有问题，继续运行
+                console.log('');
+            }
         }
+
+        // 异步检查最新版本（不阻塞主程序）
+        checkUpdateAsync(pkg.name, pkg.version);
+
     } catch (error) {
         // 静默处理更新检查错误，不影响主程序运行
         console.error(chalk.gray('检查更新失败，继续运行...'));
@@ -55,7 +78,7 @@ async function main() {
     const options = parseArgs();
     const claudePaths = getClaudeConfigPaths(options.isProject, options.projectPath);
 
-    await showMainMenu(claudePaths);
+    await showMainMenu(claudePaths, hasUpdate);
 }
 
 main();

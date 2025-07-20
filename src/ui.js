@@ -9,7 +9,7 @@ import {
   clearClaudeEnv,
 } from './claude.js';
 import { switchGeminiKey, configureGeminiSettings } from './gemini.js';
-import { openWithEditor, checkForUpdates, showUpdatePrompt } from './utils.js';
+import { openWithEditor, checkForUpdates, showUpdatePrompt, clearVersionCache } from './utils.js';
 import { getConfigPath, saveConfigs, loadConfigs } from './config.js';
 import { applyMcpConfig, showMcpStatus } from './mcp.js';
 
@@ -159,15 +159,38 @@ async function handleCheckUpdate() {
   console.log(chalk.bold.cyan('\n🔍 检查更新\n'));
   console.log(chalk.gray('正在检查最新版本...'));
 
+  let updateInfo = null;
   try {
-    const updateInfo = await checkForUpdates(pkg.name, pkg.version);
+    updateInfo = await checkForUpdates(pkg.name, pkg.version);
 
     if (updateInfo.hasUpdate && updateInfo.latestVersion) {
       showUpdatePrompt(pkg.name, updateInfo.currentVersion, updateInfo.latestVersion);
+
+      // 询问用户是否已经更新
+      const { action } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'action',
+          message: '请选择操作:',
+          choices: [
+            { name: '✅ 我已经更新了，清除更新提示', value: 'updated' },
+            { name: '⬅️  稍后更新，返回主菜单', value: 'later' },
+          ],
+        },
+      ]);
+
+      if (action === 'updated') {
+        await clearVersionCache();
+        console.log(chalk.green('\n✓ 版本缓存已清除，下次启动不会再提示此更新'));
+      }
+
     } else if (updateInfo.latestVersion) {
       console.log(chalk.green('✓ 您使用的是最新版本!'));
       console.log(chalk.gray(`   当前版本: ${updateInfo.currentVersion}`));
       console.log(chalk.gray(`   最新版本: ${updateInfo.latestVersion}`));
+
+      // 清除可能存在的过期缓存
+      await clearVersionCache();
     } else {
       console.log(chalk.yellow('⚠️  无法获取最新版本信息'));
     }
@@ -175,15 +198,17 @@ async function handleCheckUpdate() {
     console.log(chalk.red('✗ 检查更新失败:'), error.message);
   }
 
-  console.log(chalk.gray('\n按回车键继续...'));
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: '',
-      prefix: '',
-    },
-  ]);
+  if (!updateInfo?.hasUpdate) {
+    console.log(chalk.gray('\n按回车键继续...'));
+    await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'continue',
+        message: '',
+        prefix: '',
+      },
+    ]);
+  }
 }
 
 function showHeader(paths) {

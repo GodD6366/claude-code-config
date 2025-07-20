@@ -1,30 +1,15 @@
-# Claude Code Config (CCC)
+# Claude & Gemini Config Switcher (CCC)
 
-一个用于管理 Claude Code 环境配置的命令行工具，支持快速切换不同的 Claude 代理服务器和权限设置。
+一个用于管理 Claude 和 Gemini 环境配置的命令行工具。
 
 ## 功能特性
 
-- 🔄 **快速切换代理** - 在多个预设代理中为指定环境（项目/全局）快速切换。
+- 🔄 **快速切换Claude代理** - 在多个预设代理中为指定环境（项目/全局）快速切换。
+- 💎 **Gemini Key 管理** - 从配置文件中选择 Gemini Key，并快速设置到 `~/.zshrc` 或 `~/.bashrc`。
 - 🔐 **权限模式管理** - 独立管理不同环境的 `permissions.defaultMode` 设置。
 - 📁 **项目/全局配置** - 支持项目级别和全局级别的 `settings.json` 配置管理。
-- 🗄️ **集中管理** - 所有代理配置信息集中存储在一个全局文件中，方便维护。
+- 🗄️ **集中管理** - 所有Claude代理和Gemini Key配置集中存储在一个全局文件中，方便维护。
 - 🖥️ **编辑器集成** - 自动调用 Cursor 或 VS Code 编辑配置文件。
-- 📋 **配置查看** - 直观显示当前环境的配置状态。
-- 🔑 **多种认证方式** - 同时支持 `ANTHROPIC_API_KEY` 和 `ANTHROPIC_AUTH_TOKEN` 两种认证方式。
-
-## 为什么使用 CCC 而不是环境变量？
-
-直接在 `.zshrc` 或 `.bashrc` 中配置环境变量是常见做法，但存在一些弊端：
-
-- **污染全局环境** - 所有项目共享同一套配置，容易产生冲突。
-- **切换繁琐** - 需要手动修改、`source` 配置文件才能生效，效率低下。
-- **管理不便** - 配置分散，难以追踪不同项目的特定设置。
-
-CCC 通过项目级和全局级的配置文件解决了这些问题，让您能够：
-
-- **隔离环境** - 为不同项目设置独立的代理和权限，互不干扰。
-- **一键切换** - 通过菜单快速切换配置，无需重启终端。
-- **集中管理** - 将所有环境配置集中在一个 `configs.json` 文件中，清晰明了。
 
 ## 安装
 
@@ -34,17 +19,15 @@ npm install -g claude-code-config
 
 ## 使用方法
 
-### 基本命令
-
 ```bash
-# 管理全局配置 (目标: ~/.claude/settings.json)
+# 打开主菜单
 ccc
 
-# 管理当前目录的项目配置 (目标: ./ .claude/settings.json)
+# 管理当前目录的项目配置 (仅影响Claude配置)
 ccc --project
 ccc -p
 
-# 管理指定目录的项目配置 (目标: /path/to/project/.claude/settings.json)
+# 管理指定目录的项目配置 (仅影响Claude配置)
 ccc --project /path/to/project
 ccc /path/to/project
 
@@ -55,62 +38,44 @@ ccc -h
 
 ## 配置文件
 
-### 1. 代理列表 (全局唯一)
-
-这是您所有代理配置的中央存储库。
+所有配置都集中在 `~/.claude-code-config/configs.json` 文件中。
 
 - **位置**: `~/.claude-code-config/configs.json`
-- **用途**: 定义所有可供选择的代理环境。
+- **用途**: 定义所有可供选择的Claude代理和Gemini Key。
 - **格式**:
   ```json
   {
     "environments": [
       {
         "name": "anthropic-official",
+        "type": "claude",
         "ANTHROPIC_API_KEY": "sk-your-api-key-here",
         "ANTHROPIC_BASE_URL": "https://api.anthropic.com"
       },
       {
-        "name": "anyrouter",
-        "ANTHROPIC_AUTH_TOKEN": "sk-your-token-here",
-        "ANTHROPIC_BASE_URL": "https://anyrouter.top"
+        "name": "google-gemini-official",
+        "type": "gemini",
+        "GEMINI_API_KEY": "your-gemini-api-key-here"
       },
       {
-        "name": "kimi-k2",
-        "ANTHROPIC_AUTH_TOKEN": "sk-your-api-key-here",
-        "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic"
+        "name": "another-gemini-key",
+        "type": "gemini",
+        "GEMINI_API_KEY": "another-gemini-api-key"
       }
     ]
   }
   ```
-  > **提示**: 如果您需要一个免费的代理服务，可以考虑使用 [AnyRouter](https://anyrouter.top/register?aff=KGbT)。
-
-### 2. Claude 设置文件 (应用目标)
-
-这是 CCC 工具实际读取和修改的文件，Claude Code 也依赖此文件来获取配置。
-
-- **全局设置**: `~/.claude/settings.json`
-- **项目设置**: `{project}/.claude/settings.json`
+  > **提示**: `type` 字段用于区分 `"claude"` 和 `"gemini"` 配置。
 
 ## 功能菜单
 
-启动 `ccc` 后，您可以选择以下操作：
-
-- 🔄 **切换代理** - 从全局代理列表中选择一个，应用到当前目标的 `settings.json`。
-- 📝 **编辑代理配置** - 使用编辑器打开并修改全局代理列表 `configs.json`。
-- 🔐 **设置权限模式** - 修改当前目标 `settings.json` 中的 `permissions.defaultMode`。
-- 📋 **查看当前 Claude 配置** - 显示当前目标 `settings.json` 的内容，并可选择直接编辑此文件。
-- 🗑️ **清除代理配置** - 从当前目标 `settings.json` 中移除代理相关的 `env` 设置。
+- 🔄 **切换Claude代理** - 从配置中选择一个 `claude` 代理，应用到当前目标的 `settings.json`。
+- 🔑 **设置Gemini Key** - 从配置中选择一个 `gemini` Key，并将其写入 shell 配置文件。
+- 📝 **编辑全局配置文件** - 使用编辑器打开 `configs.json`。
+- 📋 **查看当前Claude配置** - 显示当前目标的 `settings.json` 内容。
+- 🔐 **设置Claude权限模式** - 修改 `settings.json` 中的 `permissions.defaultMode`。
+- 🗑️ **清除当前Claude代理配置** - 从 `settings.json` 中移除代理相关的 `env` 设置。
 - ❌ **退出** - 退出程序。
-
-### 权限模式
-
-支持在 `settings.json` 中设置以下 `permissions.defaultMode`：
-
-- **default** - 标准行为，首次使用每个工具时提示权限。
-- **acceptEdits** - 自动接受文件编辑权限。
-- **plan** - 计划模式，只能分析不能修改。
-- **bypassPermissions** - 跳过所有权限提示。
 
 ## 开发
 
@@ -129,7 +94,3 @@ node claude-env-switch.js
 ## 许可证
 
 ISC
-
-## 贡献
-
-欢迎提交 Issues 和 Pull Requests！

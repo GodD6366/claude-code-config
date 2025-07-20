@@ -10,7 +10,6 @@ const configPath = path.join(configDir, 'configs.json');
 function initializeConfig() {
     if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
-        console.log(chalk.green(`✓ 已创建配置目录: ${configDir}`));
     }
 
     if (!fs.existsSync(configPath)) {
@@ -27,11 +26,32 @@ function initializeConfig() {
                     "type": "gemini",
                     "GEMINI_API_KEY": "your-gemini-api-key-here"
                 }
-            ]
+            ],
+            "mcpServers": {
+                "context7": {
+                    "type": "stdio",
+                    "command": "npx",
+                    "args": ["-y", "@upstash/context7-mcp"],
+                    "env": {}
+                },
+                "filesystem": {
+                    "type": "stdio",
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"],
+                    "env": {}
+                },
+                "brave-search": {
+                    "type": "stdio",
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+                    "env": {
+                        "BRAVE_API_KEY": "your-brave-api-key"
+                    }
+                }
+            },
+            "activeMcpServers": []
         };
         fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
-        console.log(chalk.green(`✓ 已创建默认配置文件: ${configPath}`));
-        console.log(chalk.yellow('请编辑配置文件添加您的环境设置'));
     } else {
         // Migrate existing config file if necessary
         try {
@@ -48,9 +68,17 @@ function initializeConfig() {
                 });
             }
 
+            if (!configs.mcpServers) {
+                configs.mcpServers = {};
+                needsMigration = true;
+            }
+            if (!configs.activeMcpServers) {
+                configs.activeMcpServers = [];
+                needsMigration = true;
+            }
+
             if (needsMigration) {
                 fs.writeFileSync(configPath, JSON.stringify(configs, null, 2), 'utf8');
-                console.log(chalk.blue('✓ 您的配置文件已自动更新以兼容新版本。'));
             }
         } catch (error) {
             // Ignore errors, the main load function will handle them.

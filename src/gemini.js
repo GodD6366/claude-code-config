@@ -6,6 +6,64 @@ import os from 'os';
 import { loadConfigs } from './config.js';
 import { readGeminiKey, writeGeminiKey } from './shell.js';
 
+// Helper function to ensure Gemini settings are correct
+function ensureGeminiSettings() {
+    const geminiDir = path.join(os.homedir(), '.gemini');
+    const settingsPath = path.join(geminiDir, 'settings.json');
+    let settings = {};
+
+    if (fs.existsSync(settingsPath)) {
+        try {
+            settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+
+            // Check if selectedAuthType needs to be fixed
+            if (settings.selectedAuthType !== 'gemini-api-key') {
+                console.log(chalk.yellow(`\n⚠️  检测到认证方式设置为 "${settings.selectedAuthType || 'undefined'}"，正在自动修改为 "gemini-api-key"...`));
+                settings.selectedAuthType = 'gemini-api-key';
+
+                // Ensure directory exists
+                if (!fs.existsSync(geminiDir)) {
+                    fs.mkdirSync(geminiDir, { recursive: true });
+                }
+
+                fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+                console.log(chalk.green(`✓ 已自动修改认证方式为 "gemini-api-key"`));
+            }
+        } catch (e) {
+            console.log(chalk.yellow(`\n⚠️  读取 Gemini 设置文件时出错: ${e.message}`));
+            console.log(chalk.blue('将创建新的设置文件...'));
+
+            // Create new settings file with correct auth type
+            if (!fs.existsSync(geminiDir)) {
+                fs.mkdirSync(geminiDir, { recursive: true });
+            }
+
+            settings = {
+                selectedAuthType: 'gemini-api-key',
+                autoAccept: false
+            };
+            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+            console.log(chalk.green(`✓ 已创建新的 Gemini 设置文件，认证方式设置为 "gemini-api-key"`));
+        }
+    } else {
+        // Create settings file if it doesn't exist
+        console.log(chalk.blue(`\n📝 创建 Gemini 设置文件...`));
+
+        if (!fs.existsSync(geminiDir)) {
+            fs.mkdirSync(geminiDir, { recursive: true });
+        }
+
+        settings = {
+            selectedAuthType: 'gemini-api-key',
+            autoAccept: false
+        };
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+        console.log(chalk.green(`✓ 已创建 Gemini 设置文件，认证方式设置为 "gemini-api-key"`));
+    }
+
+    return settings;
+}
+
 export async function switchGeminiKey() {
     const configs = loadConfigs('gemini');
     const currentKey = readGeminiKey();
@@ -34,9 +92,12 @@ export async function switchGeminiKey() {
                 choices: choices,
             }
         ]);
-        
-        if (selectedKey) {
+
+                if (selectedKey) {
             writeGeminiKey(selectedKey);
+
+            // Ensure Gemini settings are correct after switching the key
+            ensureGeminiSettings();
         }
 
     } catch (error) {
@@ -49,17 +110,8 @@ export async function switchGeminiKey() {
 }
 
 export async function configureGeminiSettings() {
-    const geminiDir = path.join(os.homedir(), '.gemini');
-    const settingsPath = path.join(geminiDir, 'settings.json');
-    let settings = {};
-
-    if (fs.existsSync(settingsPath)) {
-        try {
-            settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-        } catch (e) {
-            console.log(chalk.red('错误: ~/.gemini/settings.json 文件格式无效，将创建一个新文件。'));
-        }
-    }
+    // Ensure Gemini settings are correct and get current settings
+    const settings = ensureGeminiSettings();
 
     const currentStatus = settings.autoAccept === true;
     console.log(chalk.blue(`\n当前 autoAccept 状态: ${currentStatus ? chalk.green('已启用') : chalk.red('已禁用')}`));
@@ -85,6 +137,11 @@ export async function configureGeminiSettings() {
         }
 
         settings.autoAccept = choice;
+        // Ensure selectedAuthType is always set correctly
+        settings.selectedAuthType = 'gemini-api-key';
+
+        const geminiDir = path.join(os.homedir(), '.gemini');
+        const settingsPath = path.join(geminiDir, 'settings.json');
 
         if (!fs.existsSync(geminiDir)) {
             fs.mkdirSync(geminiDir, { recursive: true });

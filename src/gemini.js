@@ -89,11 +89,19 @@ export async function switchGeminiKey() {
                 type: 'list',
                 name: 'selectedKey',
                 message: '选择要切换到的 Gemini API Key:',
-                choices: choices,
+                choices: [
+                    ...choices,
+                    new inquirer.Separator(),
+                    { name: '⬅️  返回主菜单', value: 'back' }
+                ],
             }
         ]);
 
-                if (selectedKey) {
+        if (selectedKey === 'back') {
+            return;
+        }
+
+        if (selectedKey) {
             writeGeminiKey(selectedKey);
 
             // Ensure Gemini settings are correct after switching the key
@@ -126,13 +134,13 @@ export async function configureGeminiSettings() {
                     { name: '启用 autoAccept (跳过安全操作确认)', value: true },
                     { name: '禁用 autoAccept (总是需要确认)', value: false },
                     new inquirer.Separator(),
-                    { name: '返回', value: 'cancel' }
+                    { name: '⬅️  返回主菜单', value: 'back' }
                 ],
                 default: currentStatus,
             }
         ]);
 
-        if (choice === 'cancel') {
+        if (choice === 'back') {
             return;
         }
 

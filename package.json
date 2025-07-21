@@ -40,8 +40,10 @@
   },
   "files": [
     "index.js",
+    "src",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "package.json"
   ],
   "dependencies": {
     "chalk": "^5.4.1",

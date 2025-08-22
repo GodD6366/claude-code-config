@@ -49,15 +49,25 @@ export async function switchClaudeEnv(paths) {
     const newSettings = { ...settings };
     newSettings.env = newSettings.env || {};
 
-    delete newSettings.env.ANTHROPIC_AUTH_TOKEN;
-    delete newSettings.env.ANTHROPIC_API_KEY;
+    // 使用 copyKeys 配置清理所有相关字段
+    const copyKeys = configs.copyKeys || [
+      "ANTHROPIC_BASE_URL",
+      "ANTHROPIC_AUTH_TOKEN",
+      "ANTHROPIC_API_KEY",
+      "ANTHROPIC_MODEL"
+    ];
 
-    if (selectedEnv.ANTHROPIC_API_KEY) {
-      newSettings.env.ANTHROPIC_API_KEY = selectedEnv.ANTHROPIC_API_KEY;
-    } else if (selectedEnv.ANTHROPIC_AUTH_TOKEN) {
-      newSettings.env.ANTHROPIC_AUTH_TOKEN = selectedEnv.ANTHROPIC_AUTH_TOKEN;
-    }
-    newSettings.env.ANTHROPIC_BASE_URL = selectedEnv.ANTHROPIC_BASE_URL;
+    // 清理所有 copyKeys 中定义的字段
+    copyKeys.forEach(key => {
+      delete newSettings.env[key];
+    });
+
+    // 复制新环境中存在的字段
+    copyKeys.forEach(key => {
+      if (selectedEnv[key]) {
+        newSettings.env[key] = selectedEnv[key];
+      }
+    });
 
     if (saveSettings(newSettings, paths.settingsPath)) {
       console.log(chalk.green(`\n✓ 已切换到代理: ${selectedEnv.name}`));
@@ -249,9 +259,19 @@ export async function clearClaudeEnv(paths) {
     }
 
     if (confirm) {
-      delete settings.env.ANTHROPIC_BASE_URL;
-      delete settings.env.ANTHROPIC_AUTH_TOKEN;
-      delete settings.env.ANTHROPIC_API_KEY;
+      const configs = loadConfigs('claude');
+      const copyKeys = configs.copyKeys || [
+        "ANTHROPIC_BASE_URL",
+        "ANTHROPIC_AUTH_TOKEN",
+        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_MODEL"
+      ];
+
+      // 使用 copyKeys 配置清理所有相关字段
+      copyKeys.forEach(key => {
+        delete settings.env[key];
+      });
+
       if (Object.keys(settings.env).length === 0) {
         delete settings.env;
       }

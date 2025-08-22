@@ -1,0 +1,23 @@
+{
+  "copyKeys": [
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_MODEL"
+  ],
+  "environments": [
+    {
+      "name": "anyrouter",
+      "ANTHROPIC_AUTH_TOKEN": "1111",
+      "ANTHROPIC_BASE_URL": "https://anyrouter.top",
+      "type": "claude"
+    },
+    {
+      "name": "deepseek",
+      "ANTHROPIC_AUTH_TOKEN": "2222",
+      "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+      "ANTHROPIC_MODEL": "deepseek-chat",
+      "type": "claude"
+    }
+  ]
+}

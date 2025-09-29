@@ -3,7 +3,8 @@
     "ANTHROPIC_BASE_URL",
     "ANTHROPIC_AUTH_TOKEN",
     "ANTHROPIC_API_KEY",
-    "ANTHROPIC_MODEL"
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_SMALL_FAST_MODEL"
   ],
   "environments": [
     {
@@ -15,8 +16,9 @@
     {
       "name": "deepseek",
       "ANTHROPIC_AUTH_TOKEN": "2222",
-      "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+      "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic/anthropic",
       "ANTHROPIC_MODEL": "deepseek-chat",
+      "ANTHROPIC_SMALL_FAST_MODEL": "deepseek-chat",
       "type": "claude"
     }
   ]

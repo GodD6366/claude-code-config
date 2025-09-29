@@ -50,20 +50,15 @@ export async function switchClaudeEnv(paths) {
     newSettings.env = newSettings.env || {};
 
     // 使用 copyKeys 配置清理所有相关字段
-    const copyKeys = configs.copyKeys || [
-      "ANTHROPIC_BASE_URL",
-      "ANTHROPIC_AUTH_TOKEN",
-      "ANTHROPIC_API_KEY",
-      "ANTHROPIC_MODEL"
-    ];
+    const copyKeys = configs.copyKeys;
 
     // 清理所有 copyKeys 中定义的字段
-    copyKeys.forEach(key => {
+    copyKeys.forEach((key) => {
       delete newSettings.env[key];
     });
 
     // 复制新环境中存在的字段
-    copyKeys.forEach(key => {
+    copyKeys.forEach((key) => {
       if (selectedEnv[key]) {
         newSettings.env[key] = selectedEnv[key];
       }
@@ -213,9 +208,7 @@ export async function setDefaultClaudeMode(paths) {
     settings.permissions.defaultMode = mode;
 
     if (saveSettings(settings, paths.settingsPath)) {
-      console.log(
-        chalk.green(`✓ 已设置 defaultMode`),
-      );
+      console.log(chalk.green(`✓ 已设置 defaultMode`));
     }
   } catch (error) {
     if (
@@ -260,15 +253,10 @@ export async function clearClaudeEnv(paths) {
 
     if (confirm) {
       const configs = loadConfigs('claude');
-      const copyKeys = configs.copyKeys || [
-        "ANTHROPIC_BASE_URL",
-        "ANTHROPIC_AUTH_TOKEN",
-        "ANTHROPIC_API_KEY",
-        "ANTHROPIC_MODEL"
-      ];
+      const copyKeys = configs.copyKeys;
 
       // 使用 copyKeys 配置清理所有相关字段
-      copyKeys.forEach(key => {
+      copyKeys.forEach((key) => {
         delete settings.env[key];
       });
 

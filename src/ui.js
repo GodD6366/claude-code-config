@@ -12,6 +12,7 @@ import { switchGeminiKey, configureGeminiSettings } from './gemini.js';
 import { openWithEditor, checkForUpdates, showUpdatePrompt, clearVersionCache } from './utils.js';
 import { getConfigPath, saveConfigs, loadConfigs } from './config.js';
 import { applyMcpConfig, showMcpStatus } from './mcp.js';
+import { configureMultiApi } from './multi-api.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -46,6 +47,8 @@ export async function selectMcpServer(configs) {
   });
   console.log('');
 
+  const mcpPageSize = Math.min(20, getOptimalPageSize());
+
   const { selection } = await inquirer.prompt([
     {
       type: 'checkbox',
@@ -58,7 +61,7 @@ export async function selectMcpServer(configs) {
           checked: activeMcpServers.includes(serverName),
         })),
       ],
-      pageSize: 20,
+      pageSize: mcpPageSize,
     },
   ]);
 
@@ -223,41 +226,70 @@ function showHeader(paths) {
   console.log('');
 }
 
+function getOptimalPageSize() {
+  const terminalHeight = process.stdout.rows || 24;
+  const terminalWidth = process.stdout.columns || 80;
+
+  // 计算可用高度：总高度减去头部信息、提示信息、底部空间
+  const headerLines = 6; // 头部信息大约占6行
+  const promptLines = 3; // 提示信息占3行
+  const bufferLines = 2; // 底部缓冲空间
+
+  const availableHeight = Math.max(10, terminalHeight - headerLines - promptLines - bufferLines);
+
+  // 根据终端宽度调整页面大小
+  // 窄终端需要更小的页面大小来避免换行问题
+  const widthFactor = terminalWidth < 80 ? 0.8 : 1;
+
+  return Math.min(30, Math.floor(availableHeight * widthFactor));
+}
+
 export async function showMainMenu(paths) {
   while (true) {
     showHeader(paths);
 
     const actions = [
-      new inquirer.Separator('\n--- Claude ---'),
+      new inquirer.Separator('--- Claude ---'),
       { name: '🔄 切换Claude代理', value: 'switch_claude' },
       { name: '🔐 设置Claude权限模式', value: 'permissions_claude' },
       { name: '📋 查看当前Claude配置', value: 'view_claude' },
       { name: '🗑️  清除当前Claude代理配置', value: 'delete_claude' },
-      new inquirer.Separator('\n--- Gemini ---'),
+      new inquirer.Separator('--- Gemini ---'),
       { name: '🔑 设置Gemini API Key', value: 'switch_gemini' },
       { name: '⚙️  设置Gemini权限模式', value: 'config_gemini' },
-      new inquirer.Separator('\n--- MCP 服务器 ---'),
+      new inquirer.Separator('--- MCP 服务器 ---'),
       { name: '🔧 配置 MCP 服务器', value: 'config_mcp' },
-      new inquirer.Separator('\n--- Global ---'),
+      new inquirer.Separator('--- Global ---'),
+      { name: '🚀 管理API配置', value: 'multi_api' },
       { name: '📝 编辑全局配置文件', value: 'edit_config' },
-      new inquirer.Separator('\n--- 工具 ---'),
+      new inquirer.Separator('--- 工具 ---'),
       { name: '🔍 检查更新', value: 'check_update' },
       new inquirer.Separator(),
       { name: '❌ 退出', value: 'exit' },
     ];
 
     try {
+      const pageSize = getOptimalPageSize();
+
+      // 在窄终端下显示提示信息
+      if (process.stdout.columns < 80) {
+        console.log(chalk.yellow('💡 提示: 使用方向键 ↑↓ 滚动菜单，回车键选择'));
+      }
+
       const { action } = await inquirer.prompt([
         {
           type: 'list',
           name: 'action',
           message: '请选择操作:',
           choices: actions,
-          pageSize: 30,
+          pageSize: pageSize,
         },
       ]);
 
       switch (action) {
+        case 'multi_api':
+          await configureMultiApi();
+          break;
         case 'switch_claude':
           await switchClaudeEnv(paths);
           break;

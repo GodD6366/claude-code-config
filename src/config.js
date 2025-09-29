@@ -18,15 +18,35 @@ function initializeConfig() {
                 {
                     "name": "anthropic-official",
                     "type": "claude",
+                    "description": "官方Anthropic Claude API",
                     "ANTHROPIC_API_KEY": "sk-your-api-key-here",
-                    "ANTHROPIC_BASE_URL": "https://api.anthropic.com"
+                    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
                 },
                 {
                     "name": "google-gemini-official",
                     "type": "gemini",
-                    "GEMINI_API_KEY": "your-gemini-api-key-here"
+                    "description": "官方Google Gemini API",
+                    "GEMINI_API_KEY": "your-gemini-api-key-here",
+                    "GEMINI_MODEL": "gemini-2.5-pro"
+                },
+                {
+                    "name": "moonshot-kimi",
+                    "type": "claude",
+                    "description": "Moonshot Kimi API",
+                    "ANTHROPIC_API_KEY": "your-moonshot-api-key-here",
+                    "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic",
+                    "ANTHROPIC_MODEL": "kimi-k2-turbo-preview"
+                },
+                {
+                    "name": "deepseek-official",
+                    "type": "claude",
+                    "description": "Deepseek API",
+                    "ANTHROPIC_API_KEY": "your-deepseek-api-key-here",
+                    "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+                    "ANTHROPIC_MODEL": "deepseek-chat"
                 }
             ],
+            "activeEnvironment": null,
             "mcpServers": {
                 "context7": {
                     "type": "stdio",
@@ -61,8 +81,20 @@ function initializeConfig() {
 
             if (configs.environments && Array.isArray(configs.environments)) {
                 configs.environments.forEach(env => {
+                    let envNeedsMigration = false;
+
                     if (!env.type) {
                         env.type = 'claude';
+                        envNeedsMigration = true;
+                    }
+
+                    if (env.ANTHROPIC_MODEL && !env.ANTHROPIC_SMALL_FAST_MODEL) {
+                        env.ANTHROPIC_SMALL_FAST_MODEL = env.ANTHROPIC_MODEL;
+                        envNeedsMigration = true;
+
+                    }
+
+                    if (envNeedsMigration) {
                         needsMigration = true;
                     }
                 });
@@ -74,6 +106,10 @@ function initializeConfig() {
             }
             if (!configs.activeMcpServers) {
                 configs.activeMcpServers = [];
+                needsMigration = true;
+            }
+            if (!configs.activeEnvironment) {
+                configs.activeEnvironment = null;
                 needsMigration = true;
             }
 
@@ -99,7 +135,8 @@ export function loadConfigs(type = null) {
                 "ANTHROPIC_BASE_URL",
                 "ANTHROPIC_AUTH_TOKEN",
                 "ANTHROPIC_API_KEY",
-                "ANTHROPIC_MODEL"
+                "ANTHROPIC_MODEL",
+                "ANTHROPIC_SMALL_FAST_MODEL"
             ];
         }
 

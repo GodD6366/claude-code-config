@@ -5,7 +5,7 @@
 ## 功能特性
 
 - 🔄 **快速切换Claude代理** - 在多个预设代理中为指定环境（项目/全局）快速切换。
-- 💎 **Gemini Key 管理** - 从配置文件中选择 Gemini Key，并快速设置到 `~/.zshrc` 或 `~/.bashrc`。
+- 💎 **Gemini Key 管理** - 从配置文件中选择 Gemini Key，并直接写入 `~/.gemini/.env`。
 - 🔧 **MCP 服务器统一配置** - 统一管理 Claude 和 Gemini 的 MCP 服务器配置，支持多选激活。
 - 🔐 **权限模式管理** - 独立管理不同环境的 `permissions.defaultMode` 设置。
 - 📁 **项目/全局配置** - 支持项目级别和全局级别的 `settings.json` 配置管理。
@@ -83,7 +83,7 @@ ccc -h
 ## 功能菜单
 
 - 🔄 **切换Claude代理** - 从配置中选择一个 `claude` 代理，应用到当前目标的 `settings.json`。
-- 🔑 **设置Gemini Key** - 从配置中选择一个 `gemini` Key，并将其写入 shell 配置文件。
+- 🔑 **设置Gemini Key** - 从配置中选择一个 `gemini` Key，并写入 `~/.gemini/.env`（无需手动 `source`）。
 - 🔧 **配置MCP服务器** - 从配置中选择要激活的 MCP 服务器（支持多选），自动应用到 Claude (`~/.claude.json`) 和 Gemini (`~/.gemini/settings.json`) 配置文件。
 - 📝 **编辑全局配置文件** - 使用编辑器打开 `configs.json`。
 - 📋 **查看当前Claude配置** - 显示当前目标的 `settings.json` 内容。

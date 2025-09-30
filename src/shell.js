@@ -4,52 +4,83 @@ import path from 'path';
 import os from 'os';
 import chalk from 'chalk';
 
-function getShellConfig() {
-    const homeDir = os.homedir();
-    const zshrcPath = path.join(homeDir, '.zshrc');
-    const bashrcPath = path.join(homeDir, '.bashrc');
+const geminiDir = path.join(os.homedir(), '.gemini');
+const geminiEnvPath = path.join(geminiDir, '.env');
+const keyName = 'GEMINI_API_KEY';
+const keyRegex = new RegExp(`^\\s*(?:export\\s+)?${keyName}\\s*=\\s*(.*)$`);
 
-    if (fs.existsSync(zshrcPath)) {
-        return { path: zshrcPath, type: 'zsh' };
+function ensureGeminiDir() {
+    if (!fs.existsSync(geminiDir)) {
+        fs.mkdirSync(geminiDir, { recursive: true });
     }
-    if (fs.existsSync(bashrcPath)) {
-        return { path: bashrcPath, type: 'bash' };
+}
+
+function stripQuotes(value) {
+    const trimmed = value.trim();
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+        return trimmed.slice(1, -1).replace(/\\(["'\\])/g, '$1');
     }
-    // Default to .zshrc if neither exists
-    return { path: zshrcPath, type: 'zsh' };
+    return trimmed;
+}
+
+function formatKeyLine(newKey) {
+    const escaped = newKey.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return `${keyName}="${escaped}"`;
 }
 
 export function readGeminiKey() {
-    const { path: shellConfigPath } = getShellConfig();
-    if (!fs.existsSync(shellConfigPath)) {
+    if (!fs.existsSync(geminiEnvPath)) {
         return null;
     }
-    const content = fs.readFileSync(shellConfigPath, 'utf8');
-    const regex = /^(?:export\s+)?GEMINI_API_KEY=(.*)$/m;
-    const match = content.match(regex);
-    return match ? match[1].replace(/['"]/g, '') : null;
+
+    const content = fs.readFileSync(geminiEnvPath, 'utf8');
+    const lines = content.split(/\r?\n/);
+
+    for (const line of lines) {
+        const match = line.match(keyRegex);
+        if (match) {
+            return stripQuotes(match[1]);
+        }
+    }
+
+    return null;
 }
 
 export function writeGeminiKey(newKey) {
-    const { path: shellConfigPath } = getShellConfig();
-    let content = '';
-    if (fs.existsSync(shellConfigPath)) {
-        content = fs.readFileSync(shellConfigPath, 'utf8');
+    ensureGeminiDir();
+
+    let lines = [];
+    if (fs.existsSync(geminiEnvPath)) {
+        const content = fs.readFileSync(geminiEnvPath, 'utf8');
+        lines = content.split(/\r?\n/);
     } else {
-        console.log(chalk.yellow(`未找到 shell 配置文件, 将在 ${shellConfigPath} 中创建配置。`));
+        console.log(chalk.yellow(`未找到 Gemini 环境配置文件，将在 ${geminiEnvPath} 中创建文件。`));
     }
 
-    const regex = /^(export\s+GEMINI_API_KEY=)(.*)$/m;
-    const keyLine = `export GEMINI_API_KEY="${newKey}"`;
-
-    if (regex.test(content)) {
-        content = content.replace(regex, keyLine);
-    } else {
-        content += `\n\n# Added by claude-code-config\n${keyLine}\n`;
+    if (lines.length === 1 && lines[0].trim() === '') {
+        lines = [];
     }
 
-    fs.writeFileSync(shellConfigPath, content, 'utf8');
-    console.log(chalk.green(`\n✓ Gemini API Key 已成功更新到 ${shellConfigPath}`));
-    console.log(chalk.yellow(`\n请运行以下命令使配置生效:`));
-    console.log(chalk.cyan(`  source ${shellConfigPath}`));
+    let updated = false;
+    lines = lines.map(line => {
+        if (keyRegex.test(line)) {
+            updated = true;
+            return formatKeyLine(newKey);
+        }
+        return line;
+    });
+
+    if (!updated) {
+        if (lines.length > 0 && lines[lines.length - 1].trim() !== '') {
+            lines.push('');
+        }
+        lines.push('# Managed by claude-code-config');
+        lines.push(formatKeyLine(newKey));
+    }
+
+    const newContent = lines.join('\n').replace(/\s*$/, '') + '\n';
+    fs.writeFileSync(geminiEnvPath, newContent, 'utf8');
+
+    console.log(chalk.green(`\n✓ Gemini API Key 已成功更新到 ${geminiEnvPath}`));
+    console.log(chalk.gray(`\n无需执行 source 命令，新密钥会在下次使用 Gemini CLI 时自动读取。`));
 }

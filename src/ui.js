@@ -137,6 +137,7 @@ async function handleMcpConfig() {
     console.log(chalk.blue('\n配置文件已更新:'));
     console.log(chalk.gray(`  Claude 配置: ~/.claude.json`));
     console.log(chalk.gray(`  Gemini 配置: ~/.gemini/settings.json`));
+    console.log(chalk.gray(`  Codex 配置: ~/.codex/config.toml`));
 
     console.log(chalk.gray('\n按回车键继续...'));
     await inquirer.prompt([
@@ -153,6 +154,11 @@ async function handleMcpConfig() {
     applyMcpConfig();
     console.log(chalk.green.bold('\n✓ MCP 服务器配置已成功应用！'));
     console.log(chalk.yellow('  已清除所有激活的 MCP 服务器'));
+
+    console.log(chalk.blue('\n配置文件已更新:'));
+    console.log(chalk.gray(`  Claude 配置: ~/.claude.json`));
+    console.log(chalk.gray(`  Gemini 配置: ~/.gemini/settings.json`));
+    console.log(chalk.gray(`  Codex 配置: ~/.codex/config.toml`));
 
     console.log(chalk.gray('\n按回车键继续...'));
     await inquirer.prompt([
@@ -302,7 +308,7 @@ export async function showMainMenu(paths) {
         value: 'config_gemini_mcp',
       },
       new inquirer.Separator(
-        chalk.hex('#f59e0b')('╭─ GitHub Codex ──────────────────────╮'),
+        chalk.hex('#f59e0b')('╭─ OpenAI Codex ──────────────────────╮'),
       ),
       { name: '📊 查看当前配置', value: 'view_codex' },
       {

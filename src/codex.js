@@ -120,11 +120,20 @@ export async function configureCodexMcp() {
   const configs = loadConfigs();
   const currentActiveMcpServers = getCurrentCodexMcpServers();
 
-  const mcpChoices = Object.keys(configs.mcpServers).map((name) => ({
+  const mcpChoices = Object.keys(configs.mcpServers || {}).map((name) => ({
     name: `${name} ${currentActiveMcpServers.includes(name) ? chalk.green('(已激活)') : ''}`,
     value: name,
     checked: currentActiveMcpServers.includes(name),
   }));
+
+  if (mcpChoices.length === 0) {
+    console.log('');
+    console.log(chalk.yellow('配置文件中没有定义 MCP 服务器。'));
+    console.log(chalk.cyan(`请先在配置文件中添加 MCP 服务器配置。`));
+    console.log(chalk.gray('您可以选择 "编辑全局配置文件" 来添加 MCP 服务器配置。'));
+    console.log('');
+    return;
+  }
 
   try {
     const { selectedServers } = await inquirer.prompt([

@@ -9,7 +9,16 @@ import {
   clearClaudeEnv,
 } from './claude.js';
 import { switchGeminiKey, configureGeminiSettings } from './gemini.js';
-import { openWithEditor, checkForUpdates, showUpdatePrompt, clearVersionCache } from './utils.js';
+import {
+  configureCodexMcp,
+  showCurrentCodexSettings,
+} from './codex.js';
+import {
+  openWithEditor,
+  checkForUpdates,
+  showUpdatePrompt,
+  clearVersionCache,
+} from './utils.js';
 import { getConfigPath, saveConfigs, loadConfigs } from './config.js';
 import { applyMcpConfig, showMcpStatus } from './mcp.js';
 import { configureMultiApi } from './multi-api.js';
@@ -167,7 +176,11 @@ async function handleCheckUpdate() {
     updateInfo = await checkForUpdates(pkg.name, pkg.version);
 
     if (updateInfo.hasUpdate && updateInfo.latestVersion) {
-      showUpdatePrompt(pkg.name, updateInfo.currentVersion, updateInfo.latestVersion);
+      showUpdatePrompt(
+        pkg.name,
+        updateInfo.currentVersion,
+        updateInfo.latestVersion,
+      );
 
       // 询问用户是否已经更新
       const { action } = await inquirer.prompt([
@@ -184,9 +197,10 @@ async function handleCheckUpdate() {
 
       if (action === 'updated') {
         await clearVersionCache();
-        console.log(chalk.green('\n✓ 版本缓存已清除，下次启动不会再提示此更新'));
+        console.log(
+          chalk.green('\n✓ 版本缓存已清除，下次启动不会再提示此更新'),
+        );
       }
-
     } else if (updateInfo.latestVersion) {
       console.log(chalk.green('✓ 您使用的是最新版本!'));
       console.log(chalk.gray(`   当前版本: ${updateInfo.currentVersion}`));
@@ -216,13 +230,30 @@ async function handleCheckUpdate() {
 
 function showHeader(paths) {
   console.clear();
-  console.log(chalk.bold.cyan(`🚀 环境配置管理工具 v${pkg.version}\n`));
 
-  if (paths.type === 'project') {
-    console.log(chalk.blue(`📁 项目模式: ${paths.location}`));
-  } else {
-    console.log(chalk.blue('🌐 全局模式'));
-  }
+  // 创建渐变标题
+  const title = 'AI Config Manager';
+  const version = `v${pkg.version}`;
+
+  // 使用渐变色彩和现代化设计
+  console.log('');
+  console.log(
+    chalk.bgHex('#667eea').hex('#ffffff').bold(`  ✨ ${title} ${version}  `),
+  );
+  console.log('');
+
+  // 状态栏
+  const modeIcon = paths.type === 'project' ? '📂' : '🌍';
+  const modeText =
+    paths.type === 'project' ? `项目: ${paths.location}` : '全局配置';
+  console.log(chalk.hex('#a8b3cf')(`${modeIcon} ${modeText}`));
+
+  // 分隔线
+  console.log(
+    chalk.hex('#4c5670')(
+      '─'.repeat(Math.min(process.stdout.columns || 80, 60)),
+    ),
+  );
   console.log('');
 }
 
@@ -235,7 +266,10 @@ function getOptimalPageSize() {
   const promptLines = 3; // 提示信息占3行
   const bufferLines = 2; // 底部缓冲空间
 
-  const availableHeight = Math.max(10, terminalHeight - headerLines - promptLines - bufferLines);
+  const availableHeight = Math.max(
+    10,
+    terminalHeight - headerLines - promptLines - bufferLines,
+  );
 
   // 根据终端宽度调整页面大小
   // 窄终端需要更小的页面大小来避免换行问题
@@ -249,24 +283,47 @@ export async function showMainMenu(paths) {
     showHeader(paths);
 
     const actions = [
-      new inquirer.Separator('--- Claude ---'),
-      { name: '🔄 切换Claude代理', value: 'switch_claude' },
-      { name: '🔐 设置Claude权限模式', value: 'permissions_claude' },
-      { name: '📋 查看当前Claude配置', value: 'view_claude' },
-      { name: '🗑️  清除当前Claude代理配置', value: 'delete_claude' },
-      new inquirer.Separator('--- Gemini ---'),
-      { name: '🔑 设置Gemini API Key', value: 'switch_gemini' },
-      { name: '⚙️  设置Gemini权限模式', value: 'config_gemini' },
-      new inquirer.Separator('--- MCP 服务器 ---'),
-      { name: '🔧 配置 MCP 服务器', value: 'config_mcp' },
-      new inquirer.Separator('--- Global ---'),
-      { name: '🚀 管理API配置', value: 'multi_api' },
+      new inquirer.Separator(
+        chalk.hex('#667eea')('╭─ Claude AI ─────────────────────────╮'),
+      ),
+      { name: '⚡️ 切换代理配置', value: 'switch_claude' },
+      { name: '🛡️  权限模式设置', value: 'permissions_claude' },
+      { name: '📊 查看当前配置', value: 'view_claude' },
+      { name: '🔧 MCP 配置', value: 'config_claude_mcp' },
+      { name: '🧹 清除代理配置', value: 'delete_claude' },
+      new inquirer.Separator(
+        chalk.hex('#4ade80')('╭─ Google Gemini ─────────────────────╮'),
+      ),
+      { name: '🔑 API Key 管理', value: 'switch_gemini' },
+      { name: '⚙️  配置权限模式', value: 'config_gemini' },
+      { name: '📊 查看当前配置', value: 'view_gemini' },
+      {
+        name: '🔧 MCP 配置',
+        value: 'config_gemini_mcp',
+      },
+      new inquirer.Separator(
+        chalk.hex('#f59e0b')('╭─ GitHub Codex ──────────────────────╮'),
+      ),
+      { name: '📊 查看当前配置', value: 'view_codex' },
+      {
+        name: '🔧 MCP 配置',
+        value: 'config_codex_mcp',
+      },
+      new inquirer.Separator(
+        chalk.hex('#06b6d4')('╭─ 全局设置 ──────────────────────────╮'),
+      ),
+      { name: '🌐 统一 MCP 配置 (所有工具)', value: 'config_mcp' },
+      { name: '🚀 API 配置中心', value: 'multi_api' },
       { name: '📝 编辑全局配置文件', value: 'edit_config' },
-      { name: '🎨 设置编辑器', value: 'set_editor' },
-      new inquirer.Separator('--- 工具 ---'),
+      { name: '🎨 编辑器设置', value: 'set_editor' },
+      new inquirer.Separator(
+        chalk.hex('#ec4899')('╭─ 系统工具 ──────────────────────────╮'),
+      ),
       { name: '🔍 检查更新', value: 'check_update' },
-      new inquirer.Separator(),
-      { name: '❌ 退出', value: 'exit' },
+      new inquirer.Separator(
+        chalk.hex('#6b7280')('╰─────────────────────────────────────╯'),
+      ),
+      { name: chalk.red('❌ 退出程序'), value: 'exit' },
     ];
 
     try {
@@ -274,14 +331,17 @@ export async function showMainMenu(paths) {
 
       // 在窄终端下显示提示信息
       if (process.stdout.columns < 80) {
-        console.log(chalk.yellow('💡 提示: 使用方向键 ↑↓ 滚动菜单，回车键选择'));
+        console.log(
+          chalk.hex('#fbbf24')('💡 提示: 使用 ↑↓ 导航，空格选择，回车确认'),
+        );
+        console.log('');
       }
 
       const { action } = await inquirer.prompt([
         {
           type: 'list',
           name: 'action',
-          message: '请选择操作:',
+          message: chalk.hex('#667eea')('🎯 选择要执行的操作:'),
           choices: actions,
           pageSize: pageSize,
         },
@@ -290,6 +350,18 @@ export async function showMainMenu(paths) {
       switch (action) {
         case 'multi_api':
           await configureMultiApi();
+          break;
+        case 'config_mcp':
+          await handleMcpConfig();
+          break;
+        case 'config_claude_mcp':
+          await configureClaudeMcp();
+          break;
+        case 'config_gemini_mcp':
+          await configureGeminiMcp();
+          break;
+        case 'config_codex_mcp':
+          await configureCodexMcp();
           break;
         case 'switch_claude':
           await switchClaudeEnv(paths);
@@ -300,8 +372,14 @@ export async function showMainMenu(paths) {
         case 'config_gemini':
           await configureGeminiSettings();
           break;
-        case 'config_mcp':
-          await handleMcpConfig();
+        case 'view_claude':
+          await showCurrentClaudeSettings(paths);
+          break;
+        case 'view_gemini':
+          await configureGeminiSettings();
+          break;
+        case 'view_codex':
+          await showCurrentCodexSettings();
           break;
         case 'edit_config':
           try {
@@ -333,7 +411,10 @@ export async function showMainMenu(paths) {
           await handleCheckUpdate();
           break;
         case 'exit':
-          console.log(chalk.gray('👋 再见!'));
+          console.log('');
+          console.log(chalk.hex('#667eea')('✨ 感谢使用 AI Config Manager!'));
+          console.log(chalk.hex('#a8b3cf')('🚀 Happy coding!'));
+          console.log('');
           process.exit(0);
       }
     } catch (error) {
@@ -341,10 +422,12 @@ export async function showMainMenu(paths) {
         error.name === 'ExitPromptError' ||
         error.message.includes('force closed')
       ) {
-        console.log(chalk.gray('\n👋 用户取消操作，再见!'));
+        console.log('');
+        console.log(chalk.hex('#a8b3cf')('👋 操作已取消，感谢使用!'));
+        console.log('');
         process.exit(0);
       }
-      console.error(chalk.red('发生未知错误:'), error);
+      console.error(chalk.hex('#ef4444')('❌ 发生未知错误:'), error);
     }
   }
 }
@@ -379,8 +462,8 @@ async function setEditor() {
             return '编辑器命令不能为空';
           }
           return true;
-        }
-      }
+        },
+      },
     ]);
 
     configs.editor = editor.trim();
@@ -390,7 +473,10 @@ async function setEditor() {
       console.log(chalk.red('❌ 保存配置失败'));
     }
   } catch (error) {
-    if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+    if (
+      error.name === 'ExitPromptError' ||
+      error.message.includes('force closed')
+    ) {
       console.log(chalk.gray('\n👋 用户取消操作。'));
     } else {
       console.error(chalk.red('设置编辑器失败:'), error.message);
@@ -399,13 +485,225 @@ async function setEditor() {
 }
 
 export function showUsage() {
-  console.log(chalk.bold.cyan(`🚀 环境配置管理工具 v${pkg.version}\n`));
-  console.log(chalk.white('用法:'));
-  console.log(chalk.gray('  ccc                    # 管理全局配置'));
-  console.log(chalk.gray('  ccc --project          # 管理当前目录的项目配置'));
-  console.log(chalk.gray('  ccc --project /path    # 管理指定目录的项目配置'));
-  console.log(chalk.gray('  ccc -p                 # --project 的简写'));
-  console.log(chalk.gray('  ccc /path/to/project   # 直接指定项目路径'));
-  console.log(chalk.gray('  ccc -v, --version      # 显示版本号'));
   console.log('');
+  console.log(
+    chalk
+      .bgHex('#667eea')
+      .hex('#ffffff')
+      .bold(`  ✨ AI Config Manager v${pkg.version}  `),
+  );
+  console.log('');
+  console.log(chalk.hex('#667eea')('📖 使用说明:'));
+  console.log('');
+  console.log(
+    chalk.hex('#4ade80')('  ccc                   ') +
+      chalk.hex('#a8b3cf')(' # 打开主菜单 (全局配置)'),
+  );
+  console.log(
+    chalk.hex('#4ade80')('  ccc --project         ') +
+      chalk.hex('#a8b3cf')(' # 管理当前目录项目配置'),
+  );
+  console.log(
+    chalk.hex('#4ade80')('  ccc --project /path   ') +
+      chalk.hex('#a8b3cf')(' # 管理指定目录项目配置'),
+  );
+  console.log(
+    chalk.hex('#4ade80')('  ccc -p                ') +
+      chalk.hex('#a8b3cf')(' # --project 简写'),
+  );
+  console.log(
+    chalk.hex('#4ade80')('  ccc /path/to/project  ') +
+      chalk.hex('#a8b3cf')(' # 直接指定项目路径'),
+  );
+  console.log(
+    chalk.hex('#4ade80')('  ccc --version         ') +
+      chalk.hex('#a8b3cf')(' # 显示版本信息'),
+  );
+  console.log('');
+  console.log(
+    chalk.hex('#6b7280')('🚀 支持 Claude、Gemini 和 Codex 的统一配置管理'),
+  );
+  console.log('');
+}
+
+// Claude 专用 MCP 配置
+async function configureClaudeMcp() {
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  const claudeConfigPath = path.join(os.homedir(), '.claude.json');
+  const configs = loadConfigs();
+
+  // 读取当前 Claude 配置
+  let claudeConfig = {};
+  if (fs.existsSync(claudeConfigPath)) {
+    try {
+      claudeConfig = JSON.parse(fs.readFileSync(claudeConfigPath, 'utf8'));
+    } catch (error) {
+      console.log(
+        chalk.hex('#fbbf24')('⚠️  Claude 配置文件格式错误，将创建新配置'),
+      );
+    }
+  }
+
+  const currentActiveMcpServers = Object.keys(claudeConfig.mcpServers || {});
+
+  const mcpChoices = Object.keys(configs.mcpServers).map((name) => ({
+    name: `${name} ${currentActiveMcpServers.includes(name) ? chalk.hex('#4ade80')('(已激活)') : ''}`,
+    value: name,
+    checked: currentActiveMcpServers.includes(name),
+  }));
+
+  console.log('');
+  console.log(chalk.hex('#667eea')('🔵 Claude 专用 MCP 配置'));
+  console.log(chalk.hex('#6b7280')('─'.repeat(30)));
+  console.log('');
+
+  try {
+    const { selectedServers } = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        name: 'selectedServers',
+        message: chalk.hex('#667eea')('选择要为 Claude 激活的 MCP 服务器:'),
+        choices: [...mcpChoices, new inquirer.Separator()],
+      },
+    ]);
+
+    // 更新 Claude MCP 服务器配置
+    if (selectedServers.length > 0) {
+      claudeConfig.mcpServers = {};
+      selectedServers.forEach((serverName) => {
+        if (configs.mcpServers[serverName]) {
+          claudeConfig.mcpServers[serverName] = configs.mcpServers[serverName];
+        }
+      });
+    } else {
+      delete claudeConfig.mcpServers;
+    }
+
+    // 保存配置
+    const dir = path.dirname(claudeConfigPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(
+      claudeConfigPath,
+      JSON.stringify(claudeConfig, null, 2),
+      'utf8',
+    );
+
+    console.log('');
+    console.log(chalk.hex('#4ade80')(`✨ Claude MCP 配置成功!`));
+    if (selectedServers.length > 0) {
+      console.log(
+        chalk.hex('#667eea')(`🚀 激活的服务器: ${selectedServers.join(', ')}`),
+      );
+    } else {
+      console.log(chalk.hex('#6b7280')(`🧹 已清除所有 MCP 服务器配置`));
+    }
+    console.log(chalk.hex('#a8b3cf')(`📂 配置文件: ${claudeConfigPath}`));
+    console.log('');
+  } catch (error) {
+    if (
+      error.name === 'ExitPromptError' ||
+      error.message.includes('force closed')
+    ) {
+      console.log(chalk.hex('#a8b3cf')('\n👋 操作已取消'));
+    } else {
+      throw error;
+    }
+  }
+}
+
+// Gemini 专用 MCP 配置
+async function configureGeminiMcp() {
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  const geminiConfigDir = path.join(os.homedir(), '.gemini');
+  const geminiConfigPath = path.join(geminiConfigDir, 'settings.json');
+  const configs = loadConfigs();
+
+  // 读取当前 Gemini 配置
+  let geminiConfig = {};
+  if (fs.existsSync(geminiConfigPath)) {
+    try {
+      geminiConfig = JSON.parse(fs.readFileSync(geminiConfigPath, 'utf8'));
+    } catch (error) {
+      console.log(
+        chalk.hex('#fbbf24')('⚠️  Gemini 配置文件格式错误，将创建新配置'),
+      );
+    }
+  }
+
+  const currentActiveMcpServers = Object.keys(geminiConfig.mcpServers || {});
+
+  const mcpChoices = Object.keys(configs.mcpServers).map((name) => ({
+    name: `${name} ${currentActiveMcpServers.includes(name) ? chalk.hex('#4ade80')('(已激活)') : ''}`,
+    value: name,
+    checked: currentActiveMcpServers.includes(name),
+  }));
+
+  console.log('');
+  console.log(chalk.hex('#4ade80')('🟢 Gemini 专用 MCP 配置'));
+  console.log(chalk.hex('#6b7280')('─'.repeat(30)));
+  console.log('');
+
+  try {
+    const { selectedServers } = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        name: 'selectedServers',
+        message: chalk.hex('#4ade80')('选择要为 Gemini 激活的 MCP 服务器:'),
+        choices: [...mcpChoices, new inquirer.Separator()],
+      },
+    ]);
+
+    // 更新 Gemini MCP 服务器配置
+    if (selectedServers.length > 0) {
+      geminiConfig.mcpServers = {};
+      selectedServers.forEach((serverName) => {
+        if (configs.mcpServers[serverName]) {
+          geminiConfig.mcpServers[serverName] = configs.mcpServers[serverName];
+        }
+      });
+    } else {
+      delete geminiConfig.mcpServers;
+    }
+
+    // 保存配置
+    if (!fs.existsSync(geminiConfigDir)) {
+      fs.mkdirSync(geminiConfigDir, { recursive: true });
+    }
+
+    fs.writeFileSync(
+      geminiConfigPath,
+      JSON.stringify(geminiConfig, null, 2),
+      'utf8',
+    );
+
+    console.log('');
+    console.log(chalk.hex('#4ade80')(`✨ Gemini MCP 配置成功!`));
+    if (selectedServers.length > 0) {
+      console.log(
+        chalk.hex('#4ade80')(`🚀 激活的服务器: ${selectedServers.join(', ')}`),
+      );
+    } else {
+      console.log(chalk.hex('#6b7280')(`🧹 已清除所有 MCP 服务器配置`));
+    }
+    console.log(chalk.hex('#a8b3cf')(`📂 配置文件: ${geminiConfigPath}`));
+    console.log('');
+  } catch (error) {
+    if (
+      error.name === 'ExitPromptError' ||
+      error.message.includes('force closed')
+    ) {
+      console.log(chalk.hex('#a8b3cf')('\n👋 操作已取消'));
+    } else {
+      throw error;
+    }
+  }
 }

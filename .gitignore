@@ -3,3 +3,4 @@ node_modules
 .specstory
 .default.config.json
 .claude/settings.local.json
+.dev/

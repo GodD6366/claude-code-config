@@ -47,6 +47,7 @@ function initializeConfig() {
                 }
             ],
             "activeEnvironment": null,
+            "editor": "zed",
             "mcpServers": {
                 "context7": {
                     "type": "stdio",
@@ -110,6 +111,10 @@ function initializeConfig() {
             }
             if (!configs.activeEnvironment) {
                 configs.activeEnvironment = null;
+                needsMigration = true;
+            }
+            if (!configs.editor) {
+                configs.editor = "zed";
                 needsMigration = true;
             }
 

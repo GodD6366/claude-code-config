@@ -57,7 +57,11 @@ export function getClaudeConfigPaths(isProject, projectPath) {
 }
 
 export async function openWithEditor(filePath) {
-    const editors = ['cursor', 'code'];
+    const { loadConfigs } = await import('./config.js');
+    const configs = loadConfigs();
+    const configuredEditor = configs.editor || 'zed';
+
+    const editors = [configuredEditor, 'zed', 'cursor', 'code'].filter((value, index, self) => self.indexOf(value) === index);
 
     for (const editor of editors) {
         try {
@@ -78,7 +82,7 @@ export async function openWithEditor(filePath) {
         }
     }
 
-    console.log(chalk.yellow('\n⚠️  未找到 cursor 或 code 编辑器'));
+    console.log(chalk.yellow(`\n⚠️  未找到 ${configuredEditor} 或其他已知编辑器`));
     console.log(chalk.blue(`📁 配置文件位置: ${filePath}`));
     console.log(chalk.gray('请手动使用文本编辑器打开上述文件进行编辑'));
     return false;

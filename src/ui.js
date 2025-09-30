@@ -262,6 +262,7 @@ export async function showMainMenu(paths) {
       new inquirer.Separator('--- Global ---'),
       { name: '🚀 管理API配置', value: 'multi_api' },
       { name: '📝 编辑全局配置文件', value: 'edit_config' },
+      { name: '🎨 设置编辑器', value: 'set_editor' },
       new inquirer.Separator('--- 工具 ---'),
       { name: '🔍 检查更新', value: 'check_update' },
       new inquirer.Separator(),
@@ -316,6 +317,9 @@ export async function showMainMenu(paths) {
             }
           }
           break;
+        case 'set_editor':
+          await setEditor();
+          break;
         case 'view_claude':
           await showCurrentClaudeSettings(paths);
           break;
@@ -354,6 +358,44 @@ export function showVersion() {
       console.log(`claude: ${stdout.trim()}`);
     }
   });
+}
+
+async function setEditor() {
+  try {
+    const configs = loadConfigs();
+    const currentEditor = configs.editor || 'zed';
+
+    console.log(chalk.blue('\n🎨 编辑器配置'));
+    console.log(chalk.gray(`当前编辑器: ${currentEditor}`));
+
+    const { editor } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'editor',
+        message: '请输入编辑器命令（如 zed, cursor, code, vim 等）:',
+        default: currentEditor,
+        validate: (input) => {
+          if (!input.trim()) {
+            return '编辑器命令不能为空';
+          }
+          return true;
+        }
+      }
+    ]);
+
+    configs.editor = editor.trim();
+    if (saveConfigs(configs)) {
+      console.log(chalk.green(`✓ 编辑器已设置为: ${editor.trim()}`));
+    } else {
+      console.log(chalk.red('❌ 保存配置失败'));
+    }
+  } catch (error) {
+    if (error.name === 'ExitPromptError' || error.message.includes('force closed')) {
+      console.log(chalk.gray('\n👋 用户取消操作。'));
+    } else {
+      console.error(chalk.red('设置编辑器失败:'), error.message);
+    }
+  }
 }
 
 export function showUsage() {

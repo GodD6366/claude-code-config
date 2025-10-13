@@ -296,6 +296,7 @@ export async function showMainMenu(paths) {
       { name: '🛡️  权限模式设置', value: 'permissions_claude' },
       { name: '📊 查看当前配置', value: 'view_claude' },
       { name: '🔧 MCP 配置', value: 'config_claude_mcp' },
+      { name: '🔌 VSCode插件修复', value: 'fix_vscode' },
       { name: '🧹 清除代理配置', value: 'delete_claude' },
       new inquirer.Separator(
         chalk.hex('#4ade80')('╭─ Google Gemini ─────────────────────╮'),
@@ -412,6 +413,9 @@ export async function showMainMenu(paths) {
           break;
         case 'delete_claude':
           await clearClaudeEnv(paths);
+          break;
+        case 'fix_vscode':
+          await fixVSCodePlugin();
           break;
         case 'check_update':
           await handleCheckUpdate();
@@ -710,6 +714,126 @@ async function configureGeminiMcp() {
       console.log(chalk.hex('#a8b3cf')('\n👋 操作已取消'));
     } else {
       throw error;
+    }
+  }
+}
+
+async function fixVSCodePlugin() {
+  const fs = await import("fs");
+  const path = await import("path");
+  const os = await import("os");
+
+  console.log("");
+  console.log(chalk.hex("#667eea")("🔌 VSCode 插件修复工具"));
+  console.log(chalk.hex("#6b7280")("─".repeat(30)));
+  console.log("");
+
+  const claudeConfigPath = path.join(os.homedir(), ".claude", "config.json");
+
+  try {
+    // 读取当前配置
+    let currentConfig = {};
+    if (fs.existsSync(claudeConfigPath)) {
+      try {
+        currentConfig = JSON.parse(fs.readFileSync(claudeConfigPath, "utf8"));
+        console.log(chalk.hex("#a8b3cf")(`📂 当前配置文件: ${claudeConfigPath}`));
+        console.log(chalk.hex("#6b7280")(`当前 primaryApiKey: ${currentConfig.primaryApiKey || "未设置"}`));
+        console.log("");
+      } catch (error) {
+        console.log(chalk.hex("#fbbf24")("⚠️  配置文件格式错误，将创建新配置"));
+      }
+    } else {
+      console.log(chalk.hex("#fbbf24")("⚠️  配置文件不存在，将创建新配置"));
+    }
+
+    const { action } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "action",
+        message: chalk.hex("#667eea")("选择修复操作:"),
+        choices: [
+          { name: "🔧 设置 primaryApiKey 为 \"fix-code\"", value: "fix" },
+          { name: "📝 自定义 primaryApiKey", value: "custom" },
+          { name: "📊 查看当前配置", value: "view" },
+          { name: "⬅️  返回主菜单", value: "back" },
+        ],
+      },
+    ]);
+
+    if (action === "back") {
+      return;
+    }
+
+    if (action === "view") {
+      console.log("");
+      console.log(chalk.hex("#4ade80")("📊 当前配置详情:"));
+      console.log(chalk.hex("#6b7280")(JSON.stringify(currentConfig, null, 2)));
+      console.log("");
+
+      await inquirer.prompt([
+        {
+          type: "input",
+          name: "continue",
+          message: "按回车键继续...",
+          prefix: "",
+        },
+      ]);
+      return;
+    }
+
+    let newApiKey = "fix-code";
+
+    if (action === "custom") {
+      const { customKey } = await inquirer.prompt([
+        {
+          type: "input",
+          name: "customKey",
+          message: "请输入 primaryApiKey 的值:",
+          validate: (input) => {
+            if (!input.trim()) {
+              return "primaryApiKey 不能为空";
+            }
+            return true;
+          },
+        },
+      ]);
+      newApiKey = customKey.trim();
+    }
+
+    // 更新配置
+    currentConfig.primaryApiKey = newApiKey;
+
+    // 确保目录存在
+    const configDir = path.dirname(claudeConfigPath);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+
+    // 保存配置
+    fs.writeFileSync(claudeConfigPath, JSON.stringify(currentConfig, null, 2), "utf8");
+
+    console.log("");
+    console.log(chalk.hex("#4ade80")("✨ 配置修复成功!"));
+    console.log(chalk.hex("#667eea")(`🔧 primaryApiKey 已设置为: ${newApiKey}`));
+    console.log(chalk.hex("#a8b3cf")(`📂 配置文件: ${claudeConfigPath}`));
+    console.log("");
+    console.log(chalk.hex("#6b7280")("💡 提示: 重启 VSCode 或重新加载 Claude 插件以应用修复"));
+    console.log("");
+
+    await inquirer.prompt([
+      {
+        type: "input",
+        name: "continue",
+        message: "按回车键继续...",
+        prefix: "",
+      },
+    ]);
+
+  } catch (error) {
+    if (error.name === "ExitPromptError" || error.message.includes("force closed")) {
+      console.log(chalk.hex("#a8b3cf")("\n👋 操作已取消"));
+    } else {
+      console.error(chalk.red("❌ 修复失败:"), error.message);
     }
   }
 }

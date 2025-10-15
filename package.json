@@ -1,6 +1,6 @@
 {
   "name": "claude-code-config",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "type": "module",
   "main": "index.js",
   "bin": {

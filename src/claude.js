@@ -49,17 +49,21 @@ export async function switchClaudeEnv(paths) {
     const newSettings = { ...settings };
     newSettings.env = newSettings.env || {};
 
-    // 使用 copyKeys 配置清理所有相关字段
-    const copyKeys = configs.copyKeys;
+    // 只在没有 env_bak 时才备份（即第一次使用代理时）
+    if (!newSettings.env_bak) {
+      newSettings.env_bak = { ...newSettings.env };
+    }
 
-    // 清理所有 copyKeys 中定义的字段
-    copyKeys.forEach((key) => {
-      delete newSettings.env[key];
+    // 清除所有可能的环境变量字段（除了 name, type, description 等元数据）
+    Object.keys(newSettings.env).forEach((key) => {
+      if (!['name', 'type', 'description'].includes(key)) {
+        delete newSettings.env[key];
+      }
     });
 
-    // 复制新环境中存在的字段
-    copyKeys.forEach((key) => {
-      if (selectedEnv[key]) {
+    // 复制新环境中的所有字段（除了元数据字段）
+    Object.keys(selectedEnv).forEach((key) => {
+      if (!['name', 'type', 'description'].includes(key)) {
         newSettings.env[key] = selectedEnv[key];
       }
     });
@@ -224,10 +228,8 @@ export async function setDefaultClaudeMode(paths) {
 
 export async function clearClaudeEnv(paths) {
   const settings = loadSettings(paths.settingsPath);
-  const hasToken =
-    settings.env?.ANTHROPIC_API_KEY || settings.env?.ANTHROPIC_AUTH_TOKEN;
 
-  if (!settings.env || (!settings.env.ANTHROPIC_BASE_URL && !hasToken)) {
+  if (!settings.env && !settings.env_bak) {
     console.log(chalk.yellow('⚠️  settings.json 中没有代理配置可供清除。'));
     return;
   }
@@ -252,19 +254,33 @@ export async function clearClaudeEnv(paths) {
     }
 
     if (confirm) {
-      const configs = loadConfigs('claude');
-      const copyKeys = configs.copyKeys;
+      // 始终使用 env_bak 恢复配置
+      if (settings.env_bak) {
+        settings.env = { ...settings.env_bak };
+        delete settings.env_bak;
+        console.log(chalk.green('✓ 已恢复到原始配置'));
+      } else {
+        // 如果没有 env_bak，则清除所有环境变量字段
+        const newEnv = { ...settings.env };
 
-      // 使用 copyKeys 配置清理所有相关字段
-      copyKeys.forEach((key) => {
-        delete settings.env[key];
-      });
+        Object.keys(newEnv).forEach((key) => {
+          if (!['name', 'type', 'description'].includes(key)) {
+            delete newEnv[key];
+          }
+        });
 
-      if (Object.keys(settings.env).length === 0) {
-        delete settings.env;
-      }
-      if (saveSettings(settings, paths.settingsPath)) {
+        if (Object.keys(newEnv).length === 0) {
+          delete settings.env;
+        } else {
+          settings.env = newEnv;
+        }
         console.log(chalk.green('✓ 已清除 settings.json 中的代理配置'));
+      }
+
+      if (saveSettings(settings, paths.settingsPath)) {
+        console.log(chalk.green('✓ 配置更新成功'));
+      } else {
+        console.log(chalk.red('✗ 配置保存失败'));
       }
     }
   } catch (error) {

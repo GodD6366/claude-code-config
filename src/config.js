@@ -134,17 +134,6 @@ export function loadConfigs(type = null) {
         const data = fs.readFileSync(configPath, 'utf8');
         const configs = JSON.parse(data);
 
-        // 确保有默认的 copyKeys 配置
-        if (!configs.copyKeys && type === 'claude') {
-            configs.copyKeys = [
-                "ANTHROPIC_BASE_URL",
-                "ANTHROPIC_AUTH_TOKEN",
-                "ANTHROPIC_API_KEY",
-                "ANTHROPIC_MODEL",
-                "ANTHROPIC_SMALL_FAST_MODEL"
-            ];
-        }
-
         if (type) {
             return {
                 ...configs,

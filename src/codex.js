@@ -36,6 +36,13 @@ function loadCodexSettings() {
         const cleanKey = key.trim();
         let cleanValue = value.replace(/^["']|["']$/g, '');
 
+        // 处理布尔值
+        if (cleanValue === 'true') {
+          cleanValue = true;
+        } else if (cleanValue === 'false') {
+          cleanValue = false;
+        }
+
         if (value.startsWith('[') && value.endsWith(']')) {
           // 处理数组
           cleanValue = value
@@ -51,6 +58,21 @@ function loadCodexSettings() {
           if (!settings[currentSection]) settings[currentSection] = {};
           settings[currentSection][cleanKey] = cleanValue;
         }
+      } else if (trimmed.includes('=') && !currentSection) {
+        // 处理顶级配置项（如 experimental_use_rmcp_client）
+        const [key, ...valueParts] = trimmed.split('=');
+        const value = valueParts.join('=').trim();
+        const cleanKey = key.trim();
+        let cleanValue = value.replace(/^["']|["']$/g, '');
+
+        // 处理布尔值
+        if (cleanValue === 'true') {
+          cleanValue = true;
+        } else if (cleanValue === 'false') {
+          cleanValue = false;
+        }
+
+        settings[cleanKey] = cleanValue;
       }
     }
 
@@ -69,17 +91,26 @@ function saveCodexSettings(settings) {
 
     let content = '';
 
-    // 写入其他配置项
-    for (const [section, sectionData] of Object.entries(settings)) {
-      if (section === 'mcp_servers') continue;
-
-      if (typeof sectionData === 'object' && sectionData !== null) {
-        content += `[${section}]\n`;
-        for (const [key, value] of Object.entries(sectionData)) {
-          if (Array.isArray(value)) {
-            content += `${key} = [${value.map((v) => `"${v}"`).join(', ')}]\n`;
+    // 写入顶级配置项（如 experimental_use_rmcp_client）
+    for (const [key, value] of Object.entries(settings)) {
+      if (key === 'mcp_servers') continue;
+      if (typeof value !== 'object' || value === null) {
+        // 处理简单值（布尔值、字符串、数字）
+        if (typeof value === 'boolean') {
+          content += `${key} = ${value}\n`;
+        } else {
+          content += `${key} = "${value}"\n`;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        // 处理对象类型的配置项
+        content += `[${key}]\n`;
+        for (const [objKey, objValue] of Object.entries(value)) {
+          if (Array.isArray(objValue)) {
+            content += `${objKey} = [${objValue.map((v) => `"${v}"`).join(', ')}]\n`;
+          } else if (typeof objValue === 'boolean') {
+            content += `${objKey} = ${objValue}\n`;
           } else {
-            content += `${key} = "${value}"\n`;
+            content += `${objKey} = "${objValue}"\n`;
           }
         }
         content += '\n';
@@ -95,6 +126,8 @@ function saveCodexSettings(settings) {
         for (const [key, value] of Object.entries(serverConfig)) {
           if (Array.isArray(value)) {
             content += `${key} = [${value.map((v) => `"${v}"`).join(', ')}]\n`;
+          } else if (typeof value === 'boolean') {
+            content += `${key} = ${value}\n`;
           } else {
             content += `${key} = "${value}"\n`;
           }
@@ -115,6 +148,9 @@ function getCurrentCodexMcpServers() {
   const settings = loadCodexSettings();
   return Object.keys(settings.mcp_servers || {});
 }
+
+// 导出内部函数用于测试
+export { loadCodexSettings, saveCodexSettings };
 
 export async function configureCodexMcp() {
   const configs = loadConfigs();
@@ -153,10 +189,34 @@ export async function configureCodexMcp() {
       currentSettings.mcp_servers = {};
       selectedServers.forEach((serverName) => {
         if (configs.mcpServers[serverName]) {
-          currentSettings.mcp_servers[serverName] = {
-            command: configs.mcpServers[serverName].command,
-            args: configs.mcpServers[serverName].args,
-          };
+          const serverConfig = configs.mcpServers[serverName];
+
+          if (serverConfig.type === 'http') {
+            // HTTP 配置格式
+            currentSettings.mcp_servers[serverName] = {};
+            if (serverConfig.url) {
+              currentSettings.mcp_servers[serverName].url = serverConfig.url;
+            }
+            if (serverConfig.bearer_token) {
+              currentSettings.mcp_servers[serverName].bearer_token = serverConfig.bearer_token;
+            }
+
+            // 如果需要 OAuth 支持，启用实验性功能
+            if (serverConfig.oauth || serverConfig.experimental_use_rmcp_client) {
+              currentSettings.experimental_use_rmcp_client = true;
+            }
+          } else {
+            // STDIO 配置格式 (默认)
+            currentSettings.mcp_servers[serverName] = {
+              command: serverConfig.command,
+              args: serverConfig.args,
+            };
+
+            // 保留环境变量配置
+            if (serverConfig.env && Object.keys(serverConfig.env).length > 0) {
+              currentSettings.mcp_servers[serverName].env = serverConfig.env;
+            }
+          }
         }
       });
     } else {
@@ -207,9 +267,27 @@ export async function showCurrentCodexSettings() {
       console.log(
         chalk.hex('#4ade80')(`🚀 激活的 MCP 服务器: ${mcpServers.join(', ')}`),
       );
+
+      // 显示每个服务器的详细信息
+      for (const [serverName, serverConfig] of Object.entries(settings.mcp_servers || {})) {
+        const type = serverConfig.url ? 'HTTP' : 'STDIO';
+        const typeColor = type === 'HTTP' ? chalk.hex('#3b82f6') : chalk.hex('#10b981');
+        console.log(chalk.hex('#a8b3cf')(`  • ${serverName}: ${typeColor(type)}`));
+
+        if (serverConfig.url) {
+          console.log(chalk.hex('#94a3b8')(`    URL: ${serverConfig.url}`));
+        } else if (serverConfig.command) {
+          console.log(chalk.hex('#94a3b8')(`    命令: ${serverConfig.command} ${(serverConfig.args || []).join(' ')}`));
+        }
+      }
     } else {
       console.log(chalk.hex('#6b7280')('💤 暂无激活的 MCP 服务器'));
     }
+  }
+
+  // 显示实验性功能状态
+  if (settings.experimental_use_rmcp_client) {
+    console.log(chalk.hex('#f59e0b')('🧪 实验性 RMCP 客户端: 已启用'));
   }
 
   console.log('');

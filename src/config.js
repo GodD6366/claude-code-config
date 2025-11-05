@@ -68,6 +68,16 @@ function initializeConfig() {
                     "env": {
                         "BRAVE_API_KEY": "your-brave-api-key"
                     }
+                },
+                "figma-http": {
+                    "type": "http",
+                    "url": "http://127.0.0.1:3845/mcp",
+                },
+                "custom-http-server": {
+                    "type": "http",
+                    "url": "https://your-custom-mcp-server.com/endpoint",
+                    "bearer_token": "your-custom-bearer-token",
+                    "oauth": false
                 }
             },
             "activeMcpServers": []
